@@ -1,0 +1,537 @@
+---
+title: 'Modèle "word2vec" pour la construction de vecteurs de mots'
+author: "Eléonore Khachaturova, Armand Garrigou, Léo Rongieras"
+bibliography: reference.bib
+format:
+  html:
+    toc: true
+    theme: mintly
+    reference-location: margin
+embed-resources: true 
+---
+
+# introduction
+
+Ce document propose un résumé dans l'avancé de notre projet d'implémentation du modèle word2vec. On s'inspire directement des papiers originaux, voir @mikolov2013efficient et @mikolov2013distributed . Mikolov et son équipe propose deux architectures différentes pour obtenir une représentation vectorielle des mots : **CBOW** et **SKIP-GRAM**, nous proposerons ici d'implémenter le *continous bag of words* (CBOW). Nous donnons une explication de son fonctionnement en préambule de la mise en oeuvre du modèle, voir @sec-explication
+
+Nous ferons l'implémentation python du modèle avec `pytorch` on utilisant notemment la classe de base`Module`^[voir [nn.Module](https://pytorch.org/docs/stable/generated/torch.nn.Module.html) pour la documentation officiel] pour construire notre modèle et la classe `Dataset`^[idem avec [Dataset](https://pytorch.org/tutorials/beginner/basics/data_tutorial.html)]
+pout le pre-traitement et la préparation du corpus d'entrainement. 
+
+## Continous bag of words {#sec-explication}
+
+Le principal objectif de ce modèle est d'obtenir une répresentation de mot. Comme le nom "word2vec" l'indique, nous souhaitons obtenir finalement la représentation d'un mot sous forme d'un vecteur. Cette représentation numérique d'un mot est appellée *word embedding*. L'intuition qui est au départ de ce modèl est que le sens d'un mot est déterminé par son contexte, Saussure parlait de *l'entourage* d'un mot, c'est à dire les mots qui l'entourent dans la phrase. Ce qui est nommé contexte ici est représenté par les $N$ mots avant et les $N$ mots après le mot que nous souhaitons représenter. Soit la phrase :
+
+> le chat dort les souris chantent 
+
+et $N=2$
+
+le mot "dort" peut être représenté par : **[le, chat, les, souris]**
+
+
+```{mermaid}
+flowchart TB
+
+  id1[le chat dort les souris chantent] -- w --> id[dort]
+
+  id1[le chat dort les souris chantent] --w+1--> id4[les]
+  id1[le chat dort les souris chantent] --w+2--> id5[souris]
+
+  subgraph B[" "]
+  id4[les]
+  id5[souris]
+  end
+
+  subgraph Z[" "]
+  direction LR
+  id[dort]
+  end
+  id1[le chat dort les souris chantent] -- w-2 --> id2[le]
+  id1[le chat dort les souris chantent] -- w-1 --> id3[chat]
+  subgraph A[" "]
+  id2[le]
+  id3[chat]
+  end
+```
+
+L'idée qu'un mot est déterminé par son contexte est parfaitement explicité dans les modèles de langue comme les modèles $n$-grams, on l'on assume que la probabilité de la présence d'un mot dans une phrase est déterminé par les mots qui précèdent, soit pour un modèle $bi$-gram :  
+$$P(w_1, w_2,...,w_n) = \prod_{i=2}^{n} P(w_i | w_{i-1})$$
+
+Nous allons donc voir comment CBOW peut apprendre ces probabilités.
+
+Notre modèle prend en entré un vecteur contexte $x$ et retourne un vecteur mot $y$ qui correspond au mot au centre de notre contexte. On définit deux matrices $\mathcal{W_1} \in \mathbb{R}^{|V| \times n} \text { et } \mathcal{W_2} \in \mathbb{R}^{n \times |V|}$ On note :
+
+- $w_i$ le mot en position $i$ du vocabulaire $V$
+
+- $\mathcal{W_1} \in \mathbb{R}^{|V| \times n}$ la matrice des mots en entré où $a_i$ correspond à la $i$-ème ligne de $\mathcal{W_1}$ c'est à dire le vecteur qui représente le mot en entré $w_i$ 
+
+- $\mathcal{W_2} \in \mathbb{R}^{n \times |V|}$ la matrice en sortie où $y_i$ correspond à la $i$ème colone de $\mathcal{W_2}$ c'est à dire le vecteur qui représente le mot en sortie $w_i$
+
+- $n$ correspond à la dimension arbitraire des embeddings 
+
+Les étapes du fonctionnement du modèle peuvent être décrites de telle sorte:
+
+1. On crée un vecteur d'entré composé des indices $i$ des mots $\in V$ en contexte avec une fenètre de taille $N$ soit  
+$v^c = (x^{c-N},...,x^{c-1}, x^{c+1},...,x^{c+N})$
+
+2. On obtient nos embeddings pour ce contexte. Soit $\mathcal{W_1}v^c$, on obtient une matrice de taille $N \times n$ ou chaque ligne $i$ correspond à l'embeddings du mot en contexte. Chaque vecteur dense est de dimension $n$
+
+3. On veut récupérer la somme des vecteurs appartenant au contexte $C$, c'est à dire la somme des éléments **par colone** de notre matrices $\mathcal{W_1}v^c$
+soit $$\widehat{x} = \sum_{i=1}^{N\times 2}a_i$$
+
+4. Notre vecteur score $z$ est obtenu par $$z = \mathcal{W_2} \sum_{i=1}^{N\times 2}a_i = \mathcal{W_2}\widehat{x}$$
+
+5. On retourne ce score transformé en log probabilité soit $\widehat{y} =$ log_softmax$(z)$
+
+# Mise en oeuvre
+
+Nous allons implémenter le modèle CBOW via pytorch. Nous allons entrainer notre modèle sur le corpus `wikitext-2`^[Le detail du corpus peut être trouvé [ici](https://huggingface.co/datasets/wikitext)] qui comprend du texte extrait de wikipédia. 
+
+## Preprocessing
+Nous procédons de telle manière : 
+
+- Récupération des donnés brutes
+
+- On tokénise par **phrase**
+
+- Puis on tokénise par **mot** 
+
+- On ajoute pour chaque phrase un token de début `bg` et un token de fin `end` un nombre de fois correspondant à la taille de notre fenètre. 
+
+A cet étape, avec une fenètre de taille $n = 2$ nous avons un corpus de la forme : `[[<bg>, <bg>,'une', 'première', 'phrase', <end>, <end>], [<bg>, <bg>,'une', 'deuxième', 'phrase', <end>, <end>], [...]]`
+
+Nous ferons la démonstration ici avec un petit corpus pour rendre compte du fonctionnement de l'ensemble de notre code^[L'ensemble du code peut être retrouvé sur le github du [projet](https://github.com/Lels07/word2vec-project-M1)]. On récupère les premières lignes du texte Au Bonheur Des Dames de Zola :
+```{python}
+
+text = """Denise était venue à pied de la gare Saint-Lazare, où un train de
+Cherbourg l'avait débarquée avec ses deux frères, après une nuit
+passée sur la dure banquette d'un wagon de troisième classe. Elle
+tenait par la main Pépé, et Jean la suivait, tous les trois brisés
+du voyage, effarés et perdus, au milieu du vaste Paris, le nez
+levé sur les maisons, demandant à chaque carrefour la rue de la
+Michodière, dans laquelle leur oncle Baudu demeurait. Mais, comme
+elle débouchait enfin sur la place Gaillon, la jeune fille
+s'arrêta net de surprise."""
+```
+Notre classe de Preprocessing est donnée en suivant ainsi que notre fichier de configuration dans lequel sont instanciés toutes nos constantes et hyperparamètres :
+
+```{python}
+#| code-fold: true
+
+import torch, string
+from nltk.stem.wordnet import WordNetLemmatizer
+from torch._C import dtype
+from torch.utils.data import Dataset
+from nltk.tokenize import word_tokenize
+from nltk.tokenize import sent_tokenize
+import nltk
+
+
+class Preprocess(Dataset):
+
+    def __init__(self, raw_data, window_size, fraction_size): 
+
+        vocab, word_to_idx, idx_to_word, exemples_data, training_exemples, training_data_raw = self.tokenize(raw_data, window_size, fraction_size)
+
+        self.training_exemples = training_exemples
+        self.vocab = vocab
+        self.word_to_idx = word_to_idx
+        self.idx_to_word = idx_to_word
+        self.window_size = window_size
+        self.exemples_data = exemples_data
+        self.training_data_raw = training_data_raw
+
+        # self.data = torch.tensor(training_exemples, dtype=torch.long)
+        self.data_x = torch.tensor([ex[0] for ex in training_exemples], dtype=torch.long)
+        self.data_y = torch.tensor([ex[1] for ex in training_exemples], dtype=torch.long)
+        # self.data = training_exemples
+
+
+    def __len__(self):
+        
+        return len(self.data_x)
+       
+
+    def __getitem__(self, index):
+        x = self.data_x[index]
+        y = self.data_y[index]
+
+        return x, y
+
+    def get_training_data(self, list_token, word_to_idx, window_size):
+
+        data = []
+        data_raw = []
+        for ex in list_token:
+            for i in range(len(ex) - window_size*2):
+                window = ex[i: i + window_size*2+1]
+                target = window.pop(window_size)
+                context = window
+                data.append(([word_to_idx[c] for c in context], word_to_idx[target]))
+                data_raw.append((context, target))
+
+        return data, data_raw
+
+
+    def tokenize(self, corpus, window_size, fraction_size):
+    
+        """
+        prend en entré le corpus brut
+        et renvoie une liste de token après nettoyage des données
+
+        """
+        if corpus == 'toy_corpus':
+            corpus = TOY
+            sentences_list = sent_tokenize(corpus)
+
+        
+        elif corpus == 'gensim':
+            import gensim.downloader as api
+            dataset = api.load("20-newsgroups")
+            data = [d for d in dataset][:int(fraction_size*len([d_ for d_ in dataset]))]
+            print(f'fraction of data taken: {fraction_size}/1')
+            
+            sentences_list = []
+            print("forming sentences..")
+            for s in data:
+                sentences_list.append(" ".join(s))
+        else:
+            sentences_list = sent_tokenize(corpus)[:int(fraction_size*len(sent_tokenize(corpus)))]
+
+
+        print("tokenize the data...")
+
+
+        punctation = string.punctuation + "``" 
+
+        list_token = []
+        vocab = set()
+        for s in sentences_list:
+
+            token_words_s = word_tokenize(s)
+            for i in range(window_size): 
+                token_words_s.append("<end>")
+                token_words_s.insert(0, "<bg>")
+                
+            tok = []
+
+            for w in token_words_s:
+                if w not in punctation and not w.isdigit():
+                    tok.append(w.lower())
+                    vocab.add(w.lower())
+
+            list_token.append(tok)
+        
+        
+        list_token, vocab, word_to_idx, idx_to_word = self.get_data(list_token, vocab)
+
+        training_data, training_data_raw = self.get_training_data(list_token, word_to_idx, window_size)
+
+        return vocab, word_to_idx, idx_to_word, list_token, training_data, training_data_raw 
+
+    def get_data(self, list_token, vocab): 
+
+        '''
+        prend en entré le corpus tokénisé et la window
+
+        returns:
+         - le vocabulaire : {word: count}
+         - word_to_idx : {word: index}
+         - idx_to_word : list[word]
+        '''
+        
+        word_to_idx = {word: i for i, word in enumerate(vocab)}
+        idx_to_word = list(word_to_idx.keys())
+
+        return list_token, vocab, word_to_idx, idx_to_word
+```
+
+```{python}
+#| code-fold: true
+import os
+import torch
+
+#############################
+# Config all parameters here 
+#############################
+
+DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+RAW_DATA = 'gensim' 
+MODEL_ID = RAW_DATA
+WINDOW_SIZE = 2 
+DISPLAY_LOSS = True 
+
+
+if RAW_DATA == 'gensim': 
+
+    #general parameters
+    DISPLAY_N_BATCH = 2000
+    SAVE_N_EPOCH = 1
+    BATCH_SIZE = 16
+    N_SAVE = 1
+    EPOCH = 500
+
+    #preprocess parameters
+    WINDOW_SIZE = 2
+    FRACTION_SIZE = 1
+
+    # Model parameters
+    EMBEDDING_DIM = 10
+    LEARNING_RATE = 0.001
+
+    #eval settings
+    TEST_WORDS = ["elle", "jeune", "sur", "la"]
+
+if RAW_DATA == 'toy_corpus':
+
+    #toy corpus 
+    TOY = "word1 word2 word3 word4. word5 word6 word7 word8 word9. word10 word12 word13 word14. word15 word16 word17 word18"
+    #general parameters
+    DISPLAY_N_BATCH = 3000
+    SAVE_N_EPOCH = 100
+    BATCH_SIZE = 16
+    N_SAVE = 50
+    EPOCH = 300
+
+    #preprocess parameters
+    WINDOW_SIZE = 2
+    FRACTION_SIZE = 1
+
+    # Model parameters
+    EMBEDDING_DIM = 5
+    LEARNING_RATE = 0.001
+
+    # eval settings
+    TEST_WORDS = ["word2", "word4", "word12"]
+    
+
+##### Main trainer and utils settings
+
+PREPROCESS_DATA_DIR = os.path.join(MODEL_ID, 'preprocessed')
+PREPROCESS_DATA_PATH = os.path.join(PREPROCESS_DATA_DIR, 'preprocessed_' + MODEL_ID + "_" + str(FRACTION_SIZE) + '.pickle')
+MODEL_DIR = os.path.join(MODEL_ID, "cbow")
+```
+
+Voici à quoi ressemble notre corpus après processing:
+```{python}
+test = Preprocess(text, WINDOW_SIZE, FRACTION_SIZE)
+print(test.exemples_data)
+```
+
+Depuis notre classe, on peut récupérer notre vocabulaire `vocab`, le dictionnaire qui map les mots à leurs indices `word_to_idx`, et la liste qui contient les mots selon leurs indices `idx_to_word`
+
+```{python}
+print(test.vocab)
+print(test.word_to_idx)
+print(test.idx_to_word)
+
+print('la taille du vocabulaire est de: ', len(test.vocab))
+```
+
+Nous avons dit que nous passions en entré de notre modèle un vecteur contexte dont les éléments sont les indices des mots en contexte, de plus, la méthode `nn.Embeddings` de pytorch attend en entré un tensor. Nous proposons de préparer directement ces données d'entrainement sous la bonne forme, prêt à être traiter par notre modèle. Nous récupérons donc des exemples de la forme d'un tuple, toujours avec une fenêtre $n=2$ `[([indice1, indice2, indice3, indice4], target1)]` 
+
+```{python}
+print(test.training_data_raw)
+print(test.training_exemples)
+print("le nombre de couple est de: ", len(test.training_exemples))
+```
+ce que nous passons en entré est un tensor des vecteurs contextes que nous avons constitués :
+
+```{python}
+print(test.data_x.size())
+```
+Cela correspond à une matrice de dimension $94 \times 4$, chaque ligne $i$ correspond au $i$-ème vecteur contexte
+
+
+```{python}
+print(test.data_y.size())
+```
+
+correspond à un vecteurs colone, chaque ligne $i$ correspond à l'indice du $i$-ème mot target.
+
+Nos données sont prête à être traiter par notre modèle. 
+
+## Construction du modèle
+
+```{python}
+import torch
+import torch.nn as nn 
+import torch.nn.functional as F 
+
+class CBOWModeler(nn.Module):
+  
+  def __init__(self, vocab_size, embedding_dim): 
+    super(CBOWModeler, self).__init__()
+    self.embeddings = nn.Embedding(vocab_size, embedding_dim)
+    self.linear1 = nn.Linear(embedding_dim, vocab_size)
+
+    initrange = 0.5 / embedding_dim
+    self.embeddings.weight.data.uniform_(-initrange, initrange)
+
+  def forward(self, input):
+    '''
+    calcul de la somme des contextes à laquelle on applique la transformation linéaire (tensor : [1, len(vocab)])
+
+    returns: log_softmax appliqué à la transformation 
+
+    '''
+    embedding = self.embeddings(input)
+    embedding = torch.sum(embedding, dim=1)
+
+    Z_1 = self.linear1(embedding)
+    out = F.log_softmax(Z_1, dim=1)
+
+    return out
+
+
+```
+
+```{python}
+
+vocab = test.vocab
+word_to_idx = test.word_to_idx
+idx_to_word = test.idx_to_word
+train_data = torch.utils.data.DataLoader(test, batch_size = BATCH_SIZE, shuffle = True)
+```
+
+```{python}
+#| code-fold: true
+import torch.nn as nn
+import numpy as np 
+from numpy.linalg import norm
+
+def nearest_neighbour(X, embeddings, k):
+    distance = nn.CosineSimilarity()
+    dist = distance(X, embeddings)
+    all_idx = np.argsort(-dist)[:k]
+    all_cos = dist[all_idx]
+
+    return all_idx, all_cos
+
+def k_n_nn(model, words, word_to_idx, idx_to_word, k):
+    model.eval()
+    matrix = model.embeddings.weight.data.cpu()
+
+    print(f"process to determine the {k} nearest words of {words}")
+
+    for word in words:
+        input = matrix[word_to_idx[word]]
+
+        ranking, _ = nearest_neighbour(input, matrix, k=k+1)
+
+        print(word.ljust(10), ' | ', ', '.join([idx_to_word[i] for i in ranking[1:]]))
+    
+    return {}
+```
+
+```{python}
+import torch.optim as optim
+
+loss_function = nn.NLLLoss()
+
+total_loss = []
+
+cbow = CBOWModeler(len(vocab), EMBEDDING_DIM).to(DEVICE)
+
+grad = optim.Adam(cbow.parameters(), lr=LEARNING_RATE)
+
+for epoch in range(EPOCH):
+
+    # print(i)
+    for batch_idx, (context, target) in enumerate(train_data):
+
+        cbow.train()
+
+        grad.zero_grad()
+        context = context.to(DEVICE)
+        target = target.to(DEVICE)
+
+        y_pred = cbow(context)
+        loss = loss_function(y_pred, target)
+
+        loss.backward()
+        grad.step()
+
+        total_loss.append(loss.item())
+
+print(total_loss)
+```
+
+```{python}
+import matplotlib
+import matplotlib.pyplot as plt
+
+plt.figure(figsize = (10, 10))
+plt.xlabel("batches")
+plt.ylabel("batch_loss")
+plt.title("loss vs #batch")
+
+plt.plot(total_loss)
+plt.show()
+
+
+```
+```{python}
+
+def predict(context):
+
+  cont = [word_to_idx[word] for word in context]
+  tensor = torch.tensor([cont])
+  pred = cbow(tensor)
+
+  return idx_to_word[torch.argmax(pred)]
+
+correct = 0
+for context, target in test.training_data_raw :
+  if target == predict(context):
+    correct += 1
+print(correct/len(test.training_exemples))
+  
+test_words = ["tenait", "par", "main", "pépé"]
+print(predict(test_words))
+
+
+```
+
+Nous présentons finalement ici les résultats que l'on peut obtenir à partir du corpus `wikitext-2` avec une taille vocabulaire 65000 d'uniques tokens. 
+
+```{python}
+```{python}
+
+from cbow import CBOWModeler
+from sklearn.manifold import TSNE
+
+mod = torch.load("./model499.pth", map_location=torch.device('cpu'))
+
+idx_to_word = mod["idx_to_word"]
+word_to_idx = mod["word_to_idx"]
+total_loss = mod["total_loss"]
+
+model = CBOWModeler(len(idx_to_word), 100)
+model.load_state_dict(mod["cbow_state_dict"])
+
+embeds = model.embeddings.weight.data.cpu()
+
+tsne = TSNE(n_components = 2).fit_transform(embeds.cpu())
+test_words = ['france', 'paris', 'berlin', 'king', 'queen', 'men', 'women', 'he', "she", "car", "trunk", "cake", "sandwich", "cook", ]
+x, y = [], []
+annotations = []
+for idx, coord in enumerate(tsne):
+    # print(coord)
+    annotations.append(idx_to_word[idx])
+    x.append(coord[0])
+    y.append(coord[1])
+
+plt.figure(figsize = (10, 10))
+for i in range(len(test_words)):
+    word = test_words[i]
+    #print('word: ', word)
+    vocab_idx = word_to_idx[word]
+    # print('vocab_idx: ', vocab_idx)
+    plt.scatter(x[vocab_idx], y[vocab_idx])
+    plt.annotate(word, xy = (x[vocab_idx], y[vocab_idx]), \
+        ha='right',va='bottom')
+
+plt.savefig("w2v.png")
+plt.show()
+```
+```

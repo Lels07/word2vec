@@ -1,6 +1,5 @@
 import torch.nn as nn
 import numpy as np 
-from config import *
 from numpy.linalg import norm
 
 def nearest_neighbour(X, embeddings, k):

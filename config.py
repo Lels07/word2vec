@@ -60,7 +60,7 @@ if RAW_DATA == 'toy_corpus':
 
 PREPROCESS_DATA_DIR = os.path.join(MODEL_ID, 'preprocessed')
 PREPROCESS_DATA_PATH = os.path.join(PREPROCESS_DATA_DIR, 'preprocessed_' + MODEL_ID + "_" + str(FRACTION_SIZE) + '.pickle')
-MODEL_DIR = os.path.join(MODEL_ID, "cbow")
+MODEL_DIR = os.path.join(MODEL_ID, "cbow" + str(EMBEDDING_DIM))
 
 
     

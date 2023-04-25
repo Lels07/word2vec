@@ -19,25 +19,13 @@ from cbow import CBOWModeler
 #
 #Model parameters and data are stored in a new dir if not exits
 ################################################################
+
 if os.path.exists(MODEL_DIR):
     shutil.rmtree(MODEL_DIR)
 
 os.makedirs(MODEL_DIR)
 
 
-# def read(data):
-#     with open(data, "r") as f:
-#         a = f.read()
-#     return a
-# text = read("./wikitext-2-raw/wiki.train.raw")
-
-# def read(text):
-#     with open(text, "r") as f:
-#         r = f.read()
-#
-#     return r
-#
-# corpus = read("../legifrance.gouv.fr.txt")
 
 # Load the data
 if not os.path.exists(PREPROCESS_DATA_PATH):

@@ -25,10 +25,8 @@ class Preprocess(Dataset):
         self.window_size = window_size
         self.exemples_data = exemples_data
 
-        # self.data = torch.tensor(training_exemples, dtype=torch.long)
         self.data_x = torch.tensor([ex[0] for ex in training_exemples], dtype=torch.long)
         self.data_y = torch.tensor([ex[1] for ex in training_exemples], dtype=torch.long)
-        # self.data = training_exemples
 
 
     def __len__(self):

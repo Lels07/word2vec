@@ -17,19 +17,19 @@ pour accélérer les traitements et pouvoir apprendre sur des corpus de taille c
   - [x] class pour le preproccessing
   - [ ] implémentation de nouveaux hyperparamètres:
     - [x] pouvoir diviser le corpus à la taille souhaitée par l'utilisateur
-    - [ ] implémenter un toy corpus par défault
+    - [x] implémenter un toy corpus par défault
     - [ ] avec ou sans lemmatisation
-  - [ ] deplacer la création des batchs dans la class preproccess
+  - [x] deplacer la création des batchs dans la class preproccess
 
 - [x] ecrire le modèle
 - [ ] affiner le model après test
 - [ ] écrire une class dédiée au traitements des données entrainées:
-  - [ ] stockage du model après entrainement
-  - [ ] cluster plot
-  - [ ] graphe de train
+  - [x] stockage du model après entrainement
+  - [x] cluster plot
+  - [x] graphe de train
   - [ ] accuracy
 - [ ] faire quelques logs
-  - [ ] preproccess
+  - [x] preproccess
   - [ ] CBOW
 
 - [ ] constituer le dossier du projet

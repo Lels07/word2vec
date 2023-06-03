@@ -1,5 +1,6 @@
 from numpy import mean
 import torch 
+import os, shutil
 import torch.nn as nn 
 import torch.optim as optim
 from utils import *
@@ -9,21 +10,35 @@ try:
 except:
     write_summary = False
 
-from CBOW import CBOWModeler
-from Prepro import Preprocess
+from cbow import CBOWModeler
+from Prepro import Frpreprocess, Preprocess
 
 WINDOW_SIZE = 5 
 BATCH_SIZE = 64
 MIN_FREQ = 50
-EMBEDDING_DIM = 100
-DEVICE = torch.device("mps")
-LEARNING_RATE = 0.005
-EPOCH = 20
+EMBEDDING_DIM = 300
+DEVICE = torch.device("cuda")
+LEARNING_RATE = 0.0005
+EPOCH = 200
 DISPLAY_LOSS = True
+SAVE_N_EPOCH = 10000
 DISPLAY_N_BATCH = 1000
-TEST_WORDS = ["she", "fight", "car", "work", "france"]
+TEST_WORDS = ["pain", "fleuve", "conduire", "lumière", "police", "acteur"]
+LANG = "fr"
+PATH = "./corpus/frcow-lemmatized-100000sent.xml"
+MODEL_ID = LANG
+MODEL_DIR = os.path.join(MODEL_ID, "cbow" + str(EMBEDDING_DIM))
 
-dataset = Preprocess("WikiText2", "train", WINDOW_SIZE, MIN_FREQ, BATCH_SIZE)
+if os.path.exists(MODEL_DIR):
+    shutil.rmtree(MODEL_DIR)
+
+os.makedirs(MODEL_DIR)
+
+if LANG == "fr":
+    dataset = Frpreprocess(PATH, 10, 3, 64)
+else:
+    dataset = Preprocess("WikiText2", "train", WINDOW_SIZE, MIN_FREQ, BATCH_SIZE)
+
 
 train_data = dataset.train_data
 vocab = dataset.vocab
@@ -65,5 +80,11 @@ for epoch in range(EPOCH):
             
             k_n_nn(cbow, TEST_WORDS, word_to_idx, idx_to_word, 5) 
 
-    print(mean(total_loss))
+        if batch_idx % SAVE_N_EPOCH == 0:
+            torch.save({'cbow_state_dict': cbow.state_dict(),
+                        'total_loss': total_loss,
+                        'word_to_idx': word_to_idx,
+                        'idx_to_word': idx_to_word,
+                        },'{}/model{}.pth'.format(MODEL_DIR, epoch) )
 
+    print(mean(total_loss))

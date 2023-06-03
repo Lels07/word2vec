@@ -76,7 +76,7 @@ class Preprocess:
         batch_output = torch.tensor(batch_output, dtype=torch.long)
         return batch_input, batch_output
     
-    def get_dataloader_vocab(self, dataset_name, dataset_type, batch_size, min_freq_vocab, tokenizer_name, shuffle=False):
+    def get_dataloader_vocab(self, dataset_name, dataset_type, batch_size, min_freq_vocab, tokenizer_name, shuffle=True):
 
         data = self.get_data(dataset_name, dataset_type)
         tokenizer = self.get_tokenizer(tokenizer_name)

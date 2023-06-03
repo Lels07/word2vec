@@ -124,7 +124,7 @@ soit $$\widehat{x} = \sum_{i=1}^{N\times 2}a_i$$
 
 On peut donc remarquer que après l'application du $softmax$ on obtient un vecteur $\widehat{y}$ de la taille du vocabulaire $V$, où chaque $\widehat{y_i}$ correspond à la *log-probabilité* que $\widehat{y_i}$ soit le mot cible du contexte en entrée.
 
-On peut le vérifier algébriquement : en effet notre score est obtenu par le scalaire entre la matrice $\mathcal{W_2} \in \mathbb{R}^{|V| \times n}$ et le vecteur $\widehat{x}$ de taille $n$ on a donc :
+On peut le vérifier algébriquement : en effet notre score est obtenu par le scalaire entre la matrice $\mathcal{W_2} \in \mathbb{R}^{n \times |V|}$ et le vecteur $\widehat{x}$ de taille $n$ on a donc :
 $$
 \begin{bmatrix}
 y_{1,1} & y_{2,1} & ... & y_{|V|, 1} \\
@@ -143,7 +143,21 @@ x_3 \\
 . \\
 . \\
 x_n
+\end{bmatrix} = \begin{bmatrix}
+\widehat{y_1} &
+\widehat{y_2} &
+\widehat{y_3} &
+. &
+. &
+. &
+\widehat{y_{|V|}}
 \end{bmatrix}
 $$
+
+On obtient donc un vecteur $\widehat{y}$ de taille $|V|$
+
+On peut résumer l'ensemble avec le schéma suivant : 
+
+![Architecture de modèle CBOW](./img/cbow.png)
 
 # References

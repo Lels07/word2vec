@@ -14,17 +14,17 @@ from cbow import CBOWModeler
 from Prepro import Frpreprocess, Preprocess
 
 WINDOW_SIZE = 5 
-BATCH_SIZE = 64
-MIN_FREQ = 50
-EMBEDDING_DIM = 300
+BATCH_SIZE = 32
+MIN_FREQ = 40
+EMBEDDING_DIM = 200
 DEVICE = torch.device("cuda")
 LEARNING_RATE = 0.0005
 EPOCH = 200
 DISPLAY_LOSS = True
 SAVE_N_EPOCH = 10000
 DISPLAY_N_BATCH = 1000
-TEST_WORDS = ["pain", "fleuve", "conduire", "lumière", "police", "acteur"]
-LANG = "fr"
+TEST_WORDS = ["pain", "paris", "king", "day", "fight"]
+LANG = "en"
 PATH = "./corpus/frcow-lemmatized-100000sent.xml"
 MODEL_ID = LANG
 MODEL_DIR = os.path.join(MODEL_ID, "cbow" + str(EMBEDDING_DIM))
@@ -37,7 +37,7 @@ os.makedirs(MODEL_DIR)
 if LANG == "fr":
     dataset = Frpreprocess(PATH, 10, 3, 64)
 else:
-    dataset = Preprocess("WikiText2", "train", WINDOW_SIZE, MIN_FREQ, BATCH_SIZE)
+    dataset = Preprocess("WikiText103", "train", WINDOW_SIZE, MIN_FREQ, BATCH_SIZE)
 
 
 train_data = dataset.train_data

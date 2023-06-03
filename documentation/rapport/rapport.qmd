@@ -42,3 +42,108 @@ format:
 ---
 
 # Introduction
+
+Le modèle Word2Vec a marqué une étape significative dans le domaine du traitement du langage naturel, en révolutionnant la manière d'obtenir des représentation du sens des mots. Depuis son introduction par @mikolov2013efficient, Word2Vec est devenu l'un des modèles les plus influents et largement adoptés pour la représentation des mots dans les tâches de traitement automatique du langage.
+
+L'objectif de ce rapport est de présenter en détail notre implémentation du modèle Word2Vec et de discuter des résultats obtenus lors de nos expérimentations. Nous aborderons en premier lieu les fondements théoriques du modèle.
+
+
+Le modèle Word2Vec se base sur l'hypothèse distributionnelle, selon laquelle les mots ayant des contextes similaires ont tendance à partager des significations similaires. En exploitant de vastes corpus de textes, Word2Vec apprend des représentations vectorielles
+ denses pour chaque mot, capturant ainsi les relations sémantiques et syntaxiques entre les mots. Ces représentations vectorielles, souvent appelées embeddings, ont été utilisées avec succès dans de nombreuses applications telles que la traduction automatique,
+ la recherche d'informations et la classification de documents.
+
+
+Dans notre projet, nous avons souhaité développer notre propre implémentation du modèle Word2Vec, afin de mieux comprendre son fonctionnement interne. Cette approche "from scratch" nous a permis d'explorer en profondeur les mécanismes de Word2Vec, depuis la
+ création des fenêtres contextuelles jusqu'à l'entraînement du réseau neuronal.
+
+Nous avons défini les objectifs suivants pour notre projet : (1) implémenter l'algorithme Word2Vec en utilisant le modèle CBOW, (2) entraîner notre modèle sur un corpus de texte de grande envergure, et (3) évaluer la qualité des embeddings appris, en utilisant différentes mesures de similarité sémantique et en effectuant des tâches d'analogie de mots.
+
+# Approche théorique
+
+Le modèle Word2Vec propose deux architectures principales : Skip-gram et CBOW (Continuous Bag-of-Words). Dans notre implémentation, nous avons choisi de nous concentrer sur l'architecture CBOW. Contrairement au modèle Skip-gram qui prédit les mots environnants à partir d'un mot central, CBOW utilise le contexte environnant pour prédire le mot central. Cette approche nous permet d'apprendre des embeddings de mots en exploitant les relations contextuelles.
+
+Par exemple en supposant une taille de fenetre de deux : pour la phrase "le chat dort les souris chantent", si notre mot central est "dort" notre contexte sera défini par [le, chat, les, souris]. Comme le montre le schéma suivant :
+
+```{mermaid}
+%%| fig-cap: "Schéma de la décomposition mot-cible/contexte"
+%%| fig-label: cbow
+flowchart TB
+
+  id1[le chat dort les souris chantent] -- w --> id[dort]
+
+  id1[le chat dort les souris chantent] --w+1--> id4[les]
+  id1[le chat dort les souris chantent] --w+2--> id5[souris]
+
+  subgraph B[" "]
+  id4[les]
+  id5[souris]
+  end
+
+  subgraph Z[" "]
+  direction LR
+  id[dort]
+  end
+  id1[le chat dort les souris chantent] -- w-2 --> id2[le]
+  id1[le chat dort les souris chantent] -- w-1 --> id3[chat]
+  subgraph A[" "]
+  id2[le]
+  id3[chat]
+  end
+```
+
+L'idée qu'un mot est déterminé par son contexte est parfaitement explicité dans les modèles de langue comme les modèles $n$-grams, on l'on assume que la probabilité de la présence d'un mot dans une phrase est déterminé par les mots qui précèdent, soit pour un modèle $bi$-gram :  
+$$P(w_1, w_2,...,w_n) = \prod_{i=2}^{n} P(w_i | w_{i-1})$$. 
+
+L'intérêt de l'architecture CBOW est qu'elle permet d'exploiter aussi les mots qui apparaissent *après* notre mot cible. Comme le montre notre schéma, contrairement à un modele $n$-grams traditionnel, le contexte *global* est pris en compte comme information.
+
+Nous allons donc voir comment CBOW peut apprendre ces probabilités.
+
+Notre modèle prend en entré un vecteur contexte $x$ et retourne un vecteur mot $y$ qui correspond au mot au centre de notre contexte. On définit deux matrices $\mathcal{W_1} \in \mathbb{R}^{|V| \times n} \text { et } \mathcal{W_2} \in \mathbb{R}^{n \times |V|}$ On note :
+
+- $w_i$ le mot en position $i$ du vocabulaire $V$
+
+- $\mathcal{W_1} \in \mathbb{R}^{|V| \times n}$ la matrice des mots en entré où $a_i$ correspond à la $i$-ème ligne de $\mathcal{W_1}$ c'est à dire le vecteur qui représente le mot en entré $w_i$ 
+
+- $\mathcal{W_2} \in \mathbb{R}^{n \times |V|}$ la matrice en sortie où $y_i$ correspond à la $i$-ème colone de $\mathcal{W_2}$ c'est à dire le vecteur qui représente le mot en sortie $w_i$
+
+- $n$ correspond à la dimension arbitraire des embeddings 
+
+Les étapes du fonctionnement du modèle peuvent être décrites de telle sorte:
+
+1. On crée un vecteur d'entré composé des indices $i$ des mots $\in V$ en contexte avec une fenètre de taille $N$ soit  
+$v^c = (x^{c-N},...,x^{c-1}, x^{c+1},...,x^{c+N})$
+
+2. On obtient nos embeddings pour ce contexte. Soit $\mathcal{W_1}v^c$, on obtient une matrice de taille $N \times n$ ou chaque ligne $i$ correspond à l'embeddings du mot en contexte. Chaque vecteur dense est de dimension $n$
+
+3. On veut récupérer la somme des vecteurs appartenant au contexte $C$, c'est à dire la somme des éléments **par colone** de notre matrices $\mathcal{W_1}v^c$
+soit $$\widehat{x} = \sum_{i=1}^{N\times 2}a_i$$
+
+4. Notre vecteur score $z$ est obtenu par $$z = \mathcal{W_2} \sum_{i=1}^{N\times 2}a_i = \mathcal{W_2}\widehat{x}$$
+
+5. On retourne ce score transformé en log probabilité soit $\widehat{y} =$ log_softmax$(z)$
+
+On peut donc remarquer que après l'application du $softmax$ on obtient un vecteur $\widehat{y}$ de la taille du vocabulaire $V$, où chaque $\widehat{y_i}$ correspond à la *log-probabilité* que $\widehat{y_i}$ soit le mot cible du contexte en entrée.
+
+On peut le vérifier algébriquement : en effet notre score est obtenu par le scalaire entre la matrice $\mathcal{W_2} \in \mathbb{R}^{|V| \times n}$ et le vecteur $\widehat{x}$ de taille $n$ on a donc :
+$$
+\begin{bmatrix}
+y_{1,1} & y_{2,1} & ... & y_{|V|, 1} \\
+y_{1,2} & ... & ... & ... \\
+y_{1,3} & ... & ... & ... \\
+... & ... & ... & ... \\ 
+... & ... &  ... & ... \\
+... & ... & ... & ... \\
+y_{1,n} & ... & ... & y_{|V|, n} 
+\end{bmatrix}
+\begin{bmatrix}
+x_1 \\
+x_2 \\
+x_3 \\
+. \\
+. \\
+. \\
+x_n
+\end{bmatrix}
+$$
+
+# References

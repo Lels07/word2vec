@@ -2,5 +2,4 @@
 __pycache__/ 
 corpus/
 wikitext-2-raw/
-fr/cbow100-fat/
-fr/cbow300/
+fr/

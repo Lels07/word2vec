@@ -1,0 +1,44 @@
+---
+title: "Modèle 'word2vec' pour la construction de vecteurs de mots"
+subtitle: 'Projet final de master 1 linguistique-informatique Université de Paris-cité'
+pdf-engine: lualatex
+latex-auto-install: true
+author: 
+  - name: Eléonora Khachaturova
+  - name: Armand Garrigou
+  - name: Léo Rongieras
+bibliography: references.bib
+mainfont: Linux Libertine
+format:
+  titlepage-pdf:
+    documentclass: scrbook
+    number-sections: true
+    toc: true
+    lof: true
+    lot: true
+    classoption: ["oneside", "open=any"]
+    titlepage: classic-lined
+    titlepage-logo: "img/logo.jpeg"
+    titlepage-theme:
+      elements: ["\\titleblock", "\\authorblock", "\\vfill", "\\logoblock", "\\footerblock"]
+      page-align: "center"
+      title-style: "doublelinewide"
+      title-fontsize: 30
+      title-fontstyle: "uppercase"
+      title-space-after: "0.1\\textheight"
+      subtitle-fontstyle: ["Large", "textit"]
+      author-style: "plain"
+      author-sep: "\\hskip1em"
+      author-fontstyle: "Large"
+      author-space-after: "2\\baselineskip"
+      affiliation-style: "numbered-list-with-correspondence"
+      affiliation-fontstyle: "large"
+      affiliation-space-after: "0pt"
+      footer-style: "plain"
+      footer-fontstyle: ["large", "textsc"]
+      footer-space-after: "0pt"
+      logo-size: "0.25\\textheight"
+      logo-space-after: "1cm"
+---
+
+# Introduction

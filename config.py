@@ -21,7 +21,7 @@ if RAW_DATA == 'Wikitext103' or RAW_DATA == 'frcow' or RAW_DATA == 'Wikitext2':
     BATCH_SIZE = 32
     N_SAVE = 1
     EPOCH = 20
-    DATA_TYPE = 'train'
+    DATA_TYPE = 'train' #train or test or valid
 
     #preprocess parameters
     WINDOW_SIZE = 5

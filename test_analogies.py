@@ -5,12 +5,12 @@ from utils import nearest_neighbour
 
 def main():
 
-    checkpoint = torch.load("model4.pth", map_location=torch.device('cpu'))
+    checkpoint = torch.load("./en/cbow200/model6.pth", map_location=torch.device('cpu'))
 
     idx_to_word = checkpoint["idx_to_word"]
     word_to_idx = checkpoint["word_to_idx"]
 
-    model = CBOWModeler(len(idx_to_word), 100)
+    model = CBOWModeler(len(idx_to_word), 200)
     model.load_state_dict(checkpoint["cbow_state_dict"])
     embeds = model.embeddings.weight.data.cpu()
 
@@ -24,11 +24,9 @@ def test_embeddings_on_analogies(idx_to_word:list[str], word_to_idx:dict[str:str
     counter_correct_prediction = 0
 
     # retrieve analogies
-    all_analogies_examples = get_analogies_examples("questions-words-fr.lemm.txt")
+    all_analogies_examples = get_analogies_examples("./questions-words.txt")
 
-    ban_list = ["capital-common-countries",
-    "capital-world",
-    "city-in-state",
+    ban_list = ["city-in-state",
     "gram6-nationality-adjective",
     "currency",
     "gram1-adjective-to-adverb",
@@ -40,7 +38,9 @@ def test_embeddings_on_analogies(idx_to_word:list[str], word_to_idx:dict[str:str
 
         #try every valid analogy
         for analogy in analogies:
+            # print(analogy)
             if all(item in idx_to_word for item in analogy):
+                
 
                 counter_all_examples+=1
 
@@ -54,6 +54,7 @@ def test_embeddings_on_analogies(idx_to_word:list[str], word_to_idx:dict[str:str
                 #if expected result
                 if analogy[3] in emb_ranking_top[:10]:
                     counter_correct_prediction+=1
+                    print(analogy)
 
     print(f"accuracy{counter_correct_prediction/counter_all_examples}")
 
@@ -64,7 +65,7 @@ def get_analogies_examples(path:str) -> dict[str:list[str]]:
         #load whole file
         text = file.read().strip()
         #split into each class of analogies
-        analogies = text.split(":")[1:]
+        analogies = text.lower().split(":")[1:]
         #split each example
         analogies = {analogy.split("\n")[0].strip(): analogy.split("\n")[1:] for analogy in analogies}
         #split each token within each example

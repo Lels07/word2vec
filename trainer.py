@@ -4,6 +4,7 @@ import os, shutil
 import torch.nn as nn 
 import torch.optim as optim
 from utils import *
+from config import *
 try:
     from torch.utils.tensorboard.writer import SummaryWriter
     write_summary = True
@@ -13,20 +14,6 @@ except:
 from cbow import CBOWModeler
 from Prepro import Frpreprocess, Preprocess
 
-WINDOW_SIZE = 5 
-BATCH_SIZE = 32
-MIN_FREQ = 40
-EMBEDDING_DIM = 200
-DEVICE = torch.device("cuda")
-LEARNING_RATE = 0.0005
-EPOCH = 200
-DISPLAY_LOSS = True
-SAVE_N_EPOCH = 10000
-DISPLAY_N_BATCH = 1000
-TEST_WORDS = ["pain", "paris", "king", "day", "fight"]
-LANG = "en"
-PATH = "./corpus/frcow-lemmatized-100000sent.xml"
-MODEL_ID = LANG
 MODEL_DIR = os.path.join(MODEL_ID, "cbow" + str(EMBEDDING_DIM))
 
 if os.path.exists(MODEL_DIR):
@@ -34,10 +21,10 @@ if os.path.exists(MODEL_DIR):
 
 os.makedirs(MODEL_DIR)
 
-if LANG == "fr":
-    dataset = Frpreprocess(PATH, 10, 3, 64)
+if RAW_DATA == "frcow":
+    dataset = Frpreprocess(DATA_PATH, MIN_FREQ, WINDOW_SIZE, BATCH_SIZE)
 else:
-    dataset = Preprocess("WikiText103", "train", WINDOW_SIZE, MIN_FREQ, BATCH_SIZE)
+    dataset = Preprocess(RAW_DATA, DATA_TYPE, WINDOW_SIZE, MIN_FREQ, BATCH_SIZE)
 
 
 train_data = dataset.train_data

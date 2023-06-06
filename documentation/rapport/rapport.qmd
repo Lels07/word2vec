@@ -8,7 +8,7 @@ author:
   - name: Armand Garrigou
   - name: Léo Rongieras
 bibliography: references.bib
-mainfont: Linux Libertine
+mainfont: Linux Libertine O
 format:
   titlepage-pdf:
     documentclass: scrbook
@@ -94,7 +94,7 @@ flowchart TB
 L'idée qu'un mot est déterminé par son contexte est parfaitement explicité dans les modèles de langue comme les modèles $n$-grams, on l'on assume que la probabilité de la présence d'un mot dans une phrase est déterminé par les mots qui précèdent, soit pour un modèle $bi$-gram :  
 $$P(w_1, w_2,...,w_n) = \prod_{i=2}^{n} P(w_i | w_{i-1})$$. 
 
-L'intérêt de l'architecture CBOW est qu'elle permet d'exploiter aussi les mots qui apparaissent *après* notre mot cible. Comme le montre notre schéma, contrairement à un modele $n$-grams traditionnel, le contexte *global* est pris en compte comme information.
+L'intérêt de l'architecture CBOW est qu'elle permet d'exploiter aussi les mots qui apparaissent *après* notre mot cible. Comme le montre notre schéma, contrairement à un modele $n$-grams traditionnel, le contexte *global* est pris en compte comme information. Un des apports majeur du modèle word2vec est donc se passage à la *bi-directionalité*, prendre le contexte de gauche et de droite.
 
 Nous allons donc voir comment CBOW peut apprendre ces probabilités.
 
@@ -159,5 +159,6 @@ On obtient donc un vecteur $\widehat{y}$ de taille $|V|$
 On peut résumer l'ensemble avec le schéma suivant : 
 
 ![Architecture de modèle CBOW](./img/cbow.png)
+
 
 # References

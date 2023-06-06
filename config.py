@@ -6,32 +6,34 @@ import torch
 #############################
 
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-RAW_DATA = 'frcow' # toy_corpus ou frcow 
-DATA_PATH = "./corpus/frcow-lemmatized-100000sent.xml"
+RAW_DATA = 'Wikitext103' # toy_corpus ou wikitext2 ou frcow 
+DATA_PATH = "./corpus/frcow-lemmatized-100000sent.xml" # only for french corpus
 MODEL_ID = RAW_DATA
 WINDOW_SIZE = 2 
 DISPLAY_LOSS = True 
 
 
-if RAW_DATA == 'gensim' or RAW_DATA == 'frcow': 
+if RAW_DATA == 'Wikitext103' or RAW_DATA == 'frcow' or RAW_DATA == 'Wikitext2': 
 
     #general parameters
     DISPLAY_N_BATCH = 2000
     SAVE_N_EPOCH = 1
-    BATCH_SIZE = 256
+    BATCH_SIZE = 32
     N_SAVE = 1
     EPOCH = 20
+    DATA_TYPE = 'train'
 
     #preprocess parameters
-    WINDOW_SIZE = 3
-    FRACTION_SIZE = 0.01
+    WINDOW_SIZE = 5
+    MIN_FREQ = 40
+    # FRACTION_SIZE = 0.01
 
     # Model parameters
-    EMBEDDING_DIM = 300
-    LEARNING_RATE = 0.001
+    EMBEDDING_DIM = 200
+    LEARNING_RATE = 0.0005
 
     #eval settings
-    TEST_WORDS = ["le", "personnage", "je", "être"]
+    TEST_WORDS = ["pain", "paris", "king", "day", "fight"]
 
 if RAW_DATA == 'toy_corpus':
 

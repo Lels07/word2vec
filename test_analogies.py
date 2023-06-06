@@ -4,17 +4,25 @@ from config import *
 from utils import nearest_neighbour
 
 def main():
+    accuracy_list = []
+    for i in range(7):
+        print(f"Turn = {i}")
 
-    checkpoint = torch.load("./en/cbow200/model6.pth", map_location=torch.device('cpu'))
+        path = "./en/cbow200/model" + str(i) + ".pth"
+        checkpoint = torch.load(path, map_location=torch.device('cpu'))
 
-    idx_to_word = checkpoint["idx_to_word"]
-    word_to_idx = checkpoint["word_to_idx"]
+        idx_to_word = checkpoint["idx_to_word"]
+        word_to_idx = checkpoint["word_to_idx"]
 
-    model = CBOWModeler(len(idx_to_word), 200)
-    model.load_state_dict(checkpoint["cbow_state_dict"])
-    embeds = model.embeddings.weight.data.cpu()
+        model = CBOWModeler(len(idx_to_word), 200)
+        model.load_state_dict(checkpoint["cbow_state_dict"])
+        embeds = model.embeddings.weight.data.cpu()
 
-    test_embeddings_on_analogies(idx_to_word, word_to_idx, embeds)
+        accuracy = test_embeddings_on_analogies(idx_to_word, word_to_idx, embeds)
+        accuracy_list.append(accuracy)
+
+    print(accuracy_list)
+
 
 def test_embeddings_on_analogies(idx_to_word:list[str], word_to_idx:dict[str:str], embeds:torch.Tensor):
     def vec(word):
@@ -54,9 +62,8 @@ def test_embeddings_on_analogies(idx_to_word:list[str], word_to_idx:dict[str:str
                 #if expected result
                 if analogy[3] in emb_ranking_top[:10]:
                     counter_correct_prediction+=1
-                    print(analogy)
 
-    print(f"accuracy{counter_correct_prediction/counter_all_examples}")
+    return counter_correct_prediction/counter_all_examples
 
 
 def get_analogies_examples(path:str) -> dict[str:list[str]]:

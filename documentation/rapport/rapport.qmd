@@ -98,13 +98,13 @@ L'intérêt de l'architecture CBOW est qu'elle permet d'exploiter aussi les mots
 
 Nous allons donc voir comment CBOW peut apprendre ces probabilités.
 
-Notre modèle prend en entré un vecteur contexte $x$ et retourne un vecteur mot $y$ qui correspond au mot au centre de notre contexte. On définit deux matrices $\mathcal{W_1} \in \mathbb{R}^{|V| \times n} \text { et } \mathcal{W_2} \in \mathbb{R}^{n \times |V|}$ On note :
+Notre modèle prend en entré un vecteur contexte $x$ et retourne un vecteur mot $y$ qui correspond au mot au centre de notre contexte. On définit deux matrices $\mathcal{A^{(c)}} \in \mathbb{R}^{|V| \times n} \text { et } \mathcal{A^{(w)}} \in \mathbb{R}^{n \times |V|}$ On note :
 
 - $w_i$ le mot en position $i$ du vocabulaire $V$
 
-- $\mathcal{W_1} \in \mathbb{R}^{|V| \times n}$ la matrice des mots en entré où $a_i$ correspond à la $i$-ème ligne de $\mathcal{W_1}$ c'est à dire le vecteur qui représente le mot en entré $w_i$ 
+- $\mathcal{A^{(c)}} \in \mathbb{R}^{|V| \times n}$ la matrice des mots en entré où $a_i$ correspond à la $i$-ème ligne de $\mathcal{A^{(c)}}$ c'est à dire le vecteur qui représente le mot en entré $w_i$ 
 
-- $\mathcal{W_2} \in \mathbb{R}^{n \times |V|}$ la matrice en sortie où $y_i$ correspond à la $i$-ème colone de $\mathcal{W_2}$ c'est à dire le vecteur qui représente le mot en sortie $w_i$
+- $\mathcal{A^{(w)}} \in \mathbb{R}^{n \times |V|}$ la matrice en sortie où $y_i$ correspond à la $i$-ème colone de $\mathcal{A^{(w)}}$ c'est à dire le vecteur qui représente le mot en sortie $w_i$
 
 - $n$ correspond à la dimension arbitraire des embeddings 
 
@@ -113,18 +113,18 @@ Les étapes du fonctionnement du modèle peuvent être décrites de telle sorte:
 1. On crée un vecteur d'entré composé des indices $i$ des mots $\in V$ en contexte avec une fenètre de taille $N$ soit  
 $v^c = (x^{c-N},...,x^{c-1}, x^{c+1},...,x^{c+N})$
 
-2. On obtient nos embeddings pour ce contexte. Soit $\mathcal{W_1}v^c$, on obtient une matrice de taille $N \times n$ ou chaque ligne $i$ correspond à l'embeddings du mot en contexte. Chaque vecteur dense est de dimension $n$
+2. On obtient nos embeddings pour ce contexte. Soit $\mathcal{A^{(c)}}v^c$, on obtient une matrice de taille $N \times n$ ou chaque ligne $i$ correspond à l'embeddings du mot en contexte. Chaque vecteur dense est de dimension $n$
 
-3. On veut récupérer la somme des vecteurs appartenant au contexte $C$, c'est à dire la somme des éléments **par colone** de notre matrices $\mathcal{W_1}v^c$
+3. On veut récupérer la somme des vecteurs appartenant au contexte $C$, c'est à dire la somme des éléments **par colone** de notre matrices $\mathcal{A^{(c)}}v^c$
 soit $$\widehat{x} = \sum_{i=1}^{N\times 2}a_i$$
 
-4. Notre vecteur score $z$ est obtenu par $$z = \mathcal{W_2} \sum_{i=1}^{N\times 2}a_i = \mathcal{W_2}\widehat{x}$$
+4. Notre vecteur score $z$ est obtenu par $$z = \mathcal{A^{(w)}} \sum_{i=1}^{N\times 2}a_i = \mathcal{A^{(w)}}\widehat{x}$$
 
 5. On retourne ce score transformé en log probabilité soit $\widehat{y} =$ log_softmax$(z)$
 
 On peut donc remarquer que après l'application du $softmax$ on obtient un vecteur $\widehat{y}$ de la taille du vocabulaire $V$, où chaque $\widehat{y_i}$ correspond à la *log-probabilité* que $\widehat{y_i}$ soit le mot cible du contexte en entrée.
 
-On peut le vérifier algébriquement : en effet notre score est obtenu par le scalaire entre la matrice $\mathcal{W_2} \in \mathbb{R}^{n \times |V|}$ et le vecteur $\widehat{x}$ de taille $n$ on a donc :
+On peut le vérifier algébriquement : en effet notre score est obtenu par le scalaire entre la matrice $\mathcal{A^{(w)}} \in \mathbb{R}^{n \times |V|}$ et le vecteur $\widehat{x}$ de taille $n$ on a donc :
 $$
 \begin{bmatrix}
 y_{1,1} & y_{2,1} & ... & y_{|V|, 1} \\
@@ -158,7 +158,14 @@ On obtient donc un vecteur $\widehat{y}$ de taille $|V|$
 
 On peut résumer l'ensemble avec le schéma suivant : 
 
-![Architecture de modèle CBOW](./img/cbow.png)
+![Architecture de modèle CBOW](./img/cbow.png)^[On peut noter qu'il n'y pas dans l'architecture CBOW de fonction d'activation, la seule couche cachée du réseau correspond justement à la somme des embeddings des mots en contexte que nous avons décrit, le nombre de neurone correspond simplement au nombre de mot dans le vocabulaire.]
+
+en dernier lieu, le *softmax* prend en entré le vecteur de score $z$ de taille $|V|$ et renvoie un vecteur de même dimension, où chaques composants $i$ est défini comme : 
+$$
+(\text{softmax}(z))_i = \frac{e^{z_{i}}}{\sum_{j=1}^{|V|}e^{z_{i}}}
+$$
+
+## Utilisation de Batch
 
 
 # References

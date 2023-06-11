@@ -66,7 +66,7 @@ Par exemple en supposant une taille de fenetre de deux : pour la phrase "le chat
 
 ```{mermaid}
 %%| fig-cap: "Schéma de la décomposition mot-cible/contexte"
-%%| fig-label: cbow
+%%| fig-label: fig-cbow
 flowchart TB
 
   id1[le chat dort les souris chantent] -- w --> id[dort]
@@ -156,9 +156,9 @@ $$
 
 On obtient donc un vecteur $\widehat{y}$ de taille $|V|$
 
-On peut résumer l'ensemble avec le schéma suivant : 
+On peut résumer l'ensemble avec le schéma suivant^[On peut noter qu'il n'y pas dans l'architecture CBOW de fonction d'activation, la seule couche cachée du réseau correspond justement à la somme des embeddings des mots en contexte que nous avons décrit, le nombre de neurone correspond simplement au nombre de mot dans le vocabulaire.] : 
 
-![Architecture de modèle CBOW](./img/cbow.png)^[On peut noter qu'il n'y pas dans l'architecture CBOW de fonction d'activation, la seule couche cachée du réseau correspond justement à la somme des embeddings des mots en contexte que nous avons décrit, le nombre de neurone correspond simplement au nombre de mot dans le vocabulaire.]
+![Architecture de modèle CBOW](./img/cbow.png)
 
 en dernier lieu, le *softmax* prend en entré le vecteur de score $z$ de taille $|V|$ et renvoie un vecteur de même dimension, où chaques composants $i$ est défini comme : 
 $$
@@ -167,5 +167,57 @@ $$
 
 ## Utilisation de Batch
 
+# Resultats
+
+## Calculer la qualité des embeddings
+
+Notre objectif dans cet exercice est d'obtenir des embeddings de bonne qualité, c'est à dire représentatifs du sens des mots qu'ils représentent. Pour déterminer si nos embeddings encodent des informations sémantiques, nous avons plusieurs moyen de procéder.
+
+Nous allons nous baser sur la comparaisons de nos vecteurs entre eux, sur des taches particulières. Nous pouvons dans un premier temps nous contenter de visualiser la distribution de nos embeddings dans l'espace vectoriel. Nos embeddings étant de taille 200 nous devons d'abord passer par un algorithme de réduction de dimensions afin de ne garder que les 2 dimensions les plus importantes de notre espace vectoriel. Nous obtenons donc des embeddings de dimension 2 et nous pouvons les visualiser.
+
+![visualisation des embeddings en 2 dimension](./img/tsne2model6.png){width=80%}
+
+
+Afin de confirmer ces résultats, nous pouvons mettre de coté la réduction de dimension, qui implique forcement une perte d'information. Nous cherchons à utiliser une métrique fiable et constante pour calculer la proximité entre vecteurs. Traditionellement on utilise la distance euclidienne ou la similarité cosinus. 
+
+La distance euclidienne est une mesure de la distance entre deux points dans un espace vectoriel à plusieurs dimensions. La distance euclidienne entre deux points A et B est calculée en prenant la racine carrée de la somme des carrés des différences entre les coordonnées correspondantes des points. Mathématiquement, la formule de la distance euclidienne est la suivante :
+
+$$ ||AB|| = \sqrt{(A_1 - B_1)^2 + (A_1 - B_2)^2 + ... + (A_n - B_n)^2}$$
+
+Le calcul de similarité cosinus mesure l'angle entre deux vecteurs dans l'espace vectoriel. La similarité cosinus est une mesure de similarité normalisée qui varie entre -1 et 1. Une valeur de similarité cosinus proche de 1 indique une similarité élevée entre les vecteurs, tandis qu'une valeur proche de -1 indique une similarité inverse. Il est basé sur la formule mathématique suivante :
+
+$$ cos(A, B) = \frac{(A • B)}{(||A|| \times ||B||)} $$
+
+Ces deux métriques sont pertinentes pour notre tache, elles présentent toutes deux des avantages et des inconvénients. La distance euclidienne permet de calculer les vecteurs les plus proches (littéralement) d'un embedding en particulier. Toutefois, cette distance n'est pas entièremment bornée: elle peut être égale à 0 si deux vecteurs se superposent, mais n'a pas de limite naturelle supérieure. Se problème est résolu par la similarité cosinus qui est naturellement bornée entre -1 et 1. Le seul problème de cette métrique est que deux vecteurs peuvent avoir une similarité cosinus de 1 et pourtant ne pas avoir une distance euclidienne égale à 0. Traditionellement on préfère utiliser la similarité cosinus.
+
+FIGURE COMPARAISON DISTANCE/SIMILARITE
+
+La tache sur laquelle nous allons pouvoir vraiment évaluer la qualité de nos embeddings sont les tautologies. Elles sont utilisées dans l'article original qui introduit le modèle Word2Vec (Mikolov & al., 2013). Nos vecteurs sont représentables dans un espace euclidien et en respectent les règles: 
+
+- La distance entre deux points est toujours positive.
+
+- La distance entre deux points est nulle si et seulement si les points sont identiques.
+
+- La distance entre deux points est symétrique, c'est-à-dire que la distance entre A et B est la même que la distance entre B et A.
+
+- La distance entre deux points obéit à l'inégalité triangulaire. Cela signifie que la distance entre deux points A et C ne peut jamais être plus courte que la somme des distances entre A et B, et entre B et C.
+
+Ainsi on peut appliquer correctement les opérations mathématiques simples comme l'addition et la soustraction entre vecteurs. (Mikolov et al, 2013) montre que le modèle Word2Vec permet d'appliquer l'addition entre vecteurs pour combiner les sens de deux mots, et inversement avec la soustraction. 
+
+Nous arrivons donc au fameux example de leur article: 
+    
+   >  ROI - HOMME + FEMME = REINE
+
+Si nous vérifions cette égalité avec notre modèle:
+
+FIGURE TAUTOLOGY
+
+Nous allons à présent vérifier que notre modèle performe des résultats similaires sur une liste de tautologies créée par le groupe de travail de Mikolov. Nous considerons qu'une tautologie est validée si le vecteur attendu en sortie est dans les 5 embeddings les plus proches du vecteur résultant de la soustraction et de l'addition.
+
+TAB Accuracy
+
+Les résultats sont bons, sachant que la random baseline de cet exercice serait de 5 * 1/|voc|, si nous considerons 5 examples par tautologie. Nous pouvons essayer de comparer les performance de notre modèle selon le nombre d'itérations et aussi par rapport à FastText, qui fournit des embeddings entrainés sur la même architecture Word2Vec que la notre.
+
+TAB/Graph accuracies
 
 # References

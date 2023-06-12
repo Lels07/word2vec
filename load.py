@@ -5,7 +5,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np 
 from config import *
-from preprocess import Preprocess
 from utils import *
 try:
     from torch.utils.tensorboard.writer import SummaryWriter
@@ -16,7 +15,7 @@ except:
 from cbow import CBOWModeler
 
 
-test = torch.load("./model499.pth")
+test = torch.load("./en/cbow200/model6.pth", map_location=torch.device('cpu'))
 
 idx_to_word = test["idx_to_word"]
 word_to_idx = test["word_to_idx"]
@@ -29,10 +28,10 @@ embeds = model.embeddings.weight.data.cpu()
 def vec( word):
     return embeds[word_to_idx[word]]
 
-inp = vec("walking") - vec("walk") + vec("swim")                                
+inp = vec("king") - vec("men") + vec("women")                                
 print('inp.shape: ', inp.shape)
 
-emb_ranking_top, euclidean_dis_top = nearest_neighbour(inp, embeds, 10)
+emb_ranking_top, euclidean_dis_top = nearest_neighbour(inp, embeds, 13)
 print('emb_ranking_top: ', emb_ranking_top, type(emb_ranking_top))
 
 for idx, t in enumerate(emb_ranking_top):

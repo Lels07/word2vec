@@ -202,22 +202,35 @@ La tache sur laquelle nous allons pouvoir vraiment évaluer la qualité de nos e
 
 - La distance entre deux points obéit à l'inégalité triangulaire. Cela signifie que la distance entre deux points A et C ne peut jamais être plus courte que la somme des distances entre A et B, et entre B et C.
 
-Ainsi on peut appliquer correctement les opérations mathématiques simples comme l'addition et la soustraction entre vecteurs. (Mikolov et al, 2013) montre que le modèle Word2Vec permet d'appliquer l'addition entre vecteurs pour combiner les sens de deux mots, et inversement avec la soustraction. 
-
-Nous arrivons donc au fameux example de leur article: 
+Ainsi on peut appliquer correctement les opérations mathématiques simples comme l'addition et la soustraction entre vecteurs. (Mikolov et al, 2013) montre que le modèle Word2Vec permet d'appliquer l'addition entre vecteurs pour combiner les sens de deux mots, et inversement avec la soustraction. Nous arrivons donc au fameux example de leur article: 
     
-   >  ROI - HOMME + FEMME = REINE
+  > *ROI - HOMME + FEMME = REINE*
 
 Si nous vérifions cette égalité avec notre modèle:
 
-FIGURE TAUTOLOGY
+```{python}
+#| echo: false
+#| label: tbl-tautologyQueen
+#| tbl-cap: mots les plus proches de (King-men+women)
+
+from IPython.display import Markdown
+from tabulate import tabulate
+
+table = [["monarch", 0.49], ["kings", 0.41], ["queen", 0.41], 
+         ["nobility", 0.40],
+         ["prince", 0.40]]
+Markdown(tabulate(table, headers=["word", "cosine-sim"]))
+
+```
+
+On peut voir que le mot "queen" apparait en troisième position des mots les plus similaire au vecteur résultant du calcul algébrique.
 
 Nous allons à présent vérifier que notre modèle performe des résultats similaires sur une liste de tautologies créée par le groupe de travail de Mikolov. Nous considerons qu'une tautologie est validée si le vecteur attendu en sortie est dans les 5 embeddings les plus proches du vecteur résultant de la soustraction et de l'addition.
 
-TAB Accuracy
 
-Les résultats sont bons, sachant que la random baseline de cet exercice serait de 5 * 1/|voc|, si nous considerons 5 examples par tautologie. Nous pouvons essayer de comparer les performance de notre modèle selon le nombre d'itérations et aussi par rapport à FastText, qui fournit des embeddings entrainés sur la même architecture Word2Vec que la notre.
 
-TAB/Graph accuracies
+Les résultats sont bons, sachant que la random baseline de cet exercice serait de $5 \times \frac{1}{|V|}$, si nous considerons 5 examples par tautologie. Nous pouvons essayer de comparer les performance de notre modèle selon le nombre d'itérations et aussi par rapport à FastText, qui fournit des embeddings entrainés sur la même architecture Word2Vec que la notre.
+
+![accuracy en fonction du nombre d'epoch sur une liste de tautologie](./img/accuracy_plot.png){width=70%}
 
 # References

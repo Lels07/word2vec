@@ -165,7 +165,7 @@ $$
 (\text{softmax}(z))_i = \frac{e^{z_{i}}}{\sum_{j=1}^{|V|}e^{z_{i}}}
 $$
 
-## Utilisation de Batch
+# Méthodologie et implémentation
 
 # Resultats
 

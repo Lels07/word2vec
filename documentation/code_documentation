@@ -1,0 +1,141 @@
+
+**Preprocess class**
+
+La classe "Preprocess" s'occupe de preprocessing des données en anglais. 
+
+Méthodes:
+
+    def get_tokenizer(self, tokenizer_name):
+    def get_data(self, data_name: str, data_type: tuple[str]|str):
+    def vocab_builder(self, data, tokenizer, min_freq_vocab):
+    def get_batch(self, batch, text_pipeline):
+    def get_dataloader_vocab(self, dataset_name, dataset_type, batch_size, min_freq_vocab, tokenizer_name, shuffle=True):
+
+
+- __init__
+  arguments:
+  - dataset_name (str) 
+  - dataset_type: tuple[str]|str,
+  - window_size: int,
+  - min_freq_vocab: int,
+  - batch_size
+  - tokenizer_name="basic_english"
+
+- get tokenizer (dû à un bug pytorch Léo sait mieux)
+
+- get_data 
+  Récupère les données de torchtext language modelling dataset.
+  Returns: data torchtest
+
+  arguments:
+  - data_name (str) 
+  - data_type (tuple[str]|str)): le format des données qu'on veut
+
+- vocab_builder 
+  Construit vocab à partir de data.
+  Returns: vocab: 
+  arguments:
+  - data 
+  - tokenizer
+  - min_freq_vocab
+
+- get_batch
+  ça fair quoi ça? 
+  Returns: batch_input (torch.tensor), batch_output (torch.tensor)
+  arguments:
+  - batch
+  - text_pipeline
+
+- get_dataloader_vocab 
+  arguments:
+  - dataset_name
+  - dataset_type
+  - batch_size
+  - min_freq_vocab
+  - tokenizer_name
+  - shuffle=True)
+
+
+**FPreprocess class**
+
+La classe "Preprocess" s'occupe de preprocessing du corpus FRCOW.
+Construit 
+
+Attributs:
+        self.train_data 
+        self.vocab: vocabulaire construit à partir des données
+        self.window_size: int, la taille de contexte 
+        self.batch_size: int, la proportion d'une fraction de dataset
+        self.min_freq: int, la fréquence minimal d'un token éxigé pour l'ajouter dans le vocabulaire
+        self.path: chemin vers le dataset (?)
+
+
+Méthodes:
+
+    def get_data(self, path):
+    def yieldtok(self, path):
+    def vocab_builder(self, path, data, min_freq):
+    def get_batch(self, batch, text_pipeline):
+    def get_dataloader_vocab(self, path, batch_size, min_freq_vocab, shuffle=True):
+
+
+- get_data
+  Récupère les phrases de corpus. 
+  Returns to_map_style_dataset
+  arguments: path
+
+- yield_tok
+  Split les phrases en mot, yield tokens.
+
+- vocab_builder
+  Construit le vocabulaire à partir de données. Returns vocab. 
+  arguments:
+  - path
+  - data
+  - min_freq
+ 
+
+
+*Classe CBOWModeler*
+
+Attributs:
+
+- self.embeddings = nn.Embedding(vocab_size, embedding_dim)
+  Instancie les embeddings d'une manière aléatoire, de la taille 'embedding_dim'. [torch.nn.Embedding](https://pytorch.org/docs/stable/generated/torch.nn.Embedding.html)
+
+- self.linear1 = nn.Linear(embedding_dim, vocab_size)
+  La fonction linéaire à appliquer lors de la transformation linéaire. [torch.nn.linear](https://pytorch.org/docs/stable/generated/torch.nn.Linear.html)
+
+- self.embeddings.weight.data.uniform_(-initrange, initrange)
+  L'echelle des poids. Par défaut: 0.5 / embedding_dim
+
+Méthodes:
+
+- def forward(self, input):
+  Implication de la propagation avant (c'est comment en français ça?) en effectuant le calcul
+  de la somme des contextes à laquelle on applique la transformation linéaire (tensor : [1, len(vocab)])
+  Returns: log_softmax appliqué à la transformation.
+
+  input: exemple (ou un batch d'exemples) de forme list[int] où int correspond à l'indice du mot en contexte.
+
+
+*Trainer*
+
+Le fichier responsable pour la phase d'entrainement. 
+
+Selon les hyperparamètres, effectue l'entrainement de manière suivante:
+- récupère les données prétraitées par FPreprocess ou Preprocess en fonction du format initial
+- crée une instances de classe CBOWModeler 
+  paramètres: taille du vocabulaire, dimension des embeddings, (device)
+- crée une instance d'optimizer (par défaut - [Adam](https://pytorch.org/docs/stable/generated/torch.optim.Adam.html))
+  paramètres: paramètres du modèle CBOW, learning_rate
+- pour le nombre d'epoques indiqué
+  - fait appel à la méthode train de la classe CBOWModeler
+  - calcule la loss pour une paire contexte / mot-cible
+  - loss.backward et grad step 
+  - mets à jour les poids selon la loss calculé
+- calcule la loss total sur tous les exemples
+
+
+
+

@@ -6,19 +6,19 @@ import matplotlib.pyplot as plt
 
 from sklearn.manifold import TSNE
 
-test = torch.load("./en/cbow200/model6.pth", map_location=torch.device('cpu'))
+test = torch.load("./fr/cbow100-fat/model4.pth")
 
 idx_to_word = test["idx_to_word"]
 word_to_idx = test["word_to_idx"]
 total_loss = test["total_loss"]
 
-model = CBOWModeler(len(idx_to_word), 200)
+model = CBOWModeler(len(idx_to_word), 100)
 model.load_state_dict(test["cbow_state_dict"])
 
 embeds = model.embeddings.weight.data.cpu()
 
 tsne = TSNE(n_components = 2).fit_transform(embeds.cpu())
-test_words = ['france', 'paris', 'berlin','germany', 'king', 'queen', 'men', 'women', 'he', "she", "car", "trunk", "cake", "sandwich", "cook",'war', 'fight', 'violence' ]
+test_words = ["roi", "reine", "lourd","léger", "france", "allemagne", "paris", "berlin"]
 x, y = [], []
 annotations = []
 for idx, coord in enumerate(tsne):

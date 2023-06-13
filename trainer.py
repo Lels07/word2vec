@@ -5,11 +5,13 @@ import torch.nn as nn
 import torch.optim as optim
 from utils import *
 from config import *
-try:
-    from torch.utils.tensorboard.writer import SummaryWriter
-    write_summary = True
-except:
-    write_summary = False
+from torch.optim.lr_scheduler import LambdaLR
+# try:
+#     from torch.utils.tensorboard.writer import SummaryWriter
+#     write_summary = True
+# except:
+#     write_summary = False
+
 
 from cbow import CBOWModeler
 from Prepro import Frpreprocess, Preprocess
@@ -41,6 +43,9 @@ cbow = CBOWModeler(len(vocab), EMBEDDING_DIM).to(DEVICE)
 
 grad = optim.Adam(cbow.parameters(), lr=LEARNING_RATE)
 
+lr_lambda = lambda epoch: (EPOCH - epoch) / EPOCH
+lr_scheduler = LambdaLR(grad, lr_lambda=lr_lambda, verbose=True)
+
 for epoch in range(EPOCH):
     print('\n===== EPOCH {}/{} ====='.format(epoch + 1, EPOCH))   
 
@@ -62,6 +67,7 @@ for epoch in range(EPOCH):
 
         total_loss.append(loss.item())
 
+
         if batch_idx % DISPLAY_N_BATCH == 0 and DISPLAY_LOSS:
             print(f'Batch: {batch_idx+1}/{len(train_data)}, Loss: {mean(total_loss)}')
             
@@ -73,5 +79,6 @@ for epoch in range(EPOCH):
                         'word_to_idx': word_to_idx,
                         'idx_to_word': idx_to_word,
                         },'{}/model{}.pth'.format(MODEL_DIR, epoch) )
+    lr_scheduler.step()
 
     print(mean(total_loss))

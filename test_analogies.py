@@ -2,19 +2,22 @@ from cbow import CBOWModeler
 import torch
 from config import *
 from utils import nearest_neighbour
+import matplotlib.pyplot as plt
+
+
 
 def main():
     accuracy_list = []
-    for i in range(7):
+    for i in range(5):
         print(f"Turn = {i}")
 
-        path = "./en/cbow200/model" + str(i) + ".pth"
-        checkpoint = torch.load(path, map_location=torch.device('cpu'))
+        path = "./fr/cbow100-fat/model" + str(i) + ".pth"
+        checkpoint = torch.load(path)
 
         idx_to_word = checkpoint["idx_to_word"]
         word_to_idx = checkpoint["word_to_idx"]
 
-        model = CBOWModeler(len(idx_to_word), 200)
+        model = CBOWModeler(len(idx_to_word), 100)
         model.load_state_dict(checkpoint["cbow_state_dict"])
         embeds = model.embeddings.weight.data.cpu()
 
@@ -22,6 +25,10 @@ def main():
         accuracy_list.append(accuracy)
 
     print(accuracy_list)
+
+    plt.plot(accuracy_list)
+    plt.ylabel("accuracy")
+    plt.show()
 
 
 def test_embeddings_on_analogies(idx_to_word:list[str], word_to_idx:dict[str:str], embeds:torch.Tensor):
@@ -32,7 +39,7 @@ def test_embeddings_on_analogies(idx_to_word:list[str], word_to_idx:dict[str:str
     counter_correct_prediction = 0
 
     # retrieve analogies
-    all_analogies_examples = get_analogies_examples("./questions-words.txt")
+    all_analogies_examples = get_analogies_examples("./questions-words-fr.lemm.txt")
 
     ban_list = ["city-in-state",
     "gram6-nationality-adjective",

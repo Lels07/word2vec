@@ -15,12 +15,12 @@ except:
 from cbow import CBOWModeler
 
 
-test = torch.load("./en/cbow200/model6.pth", map_location=torch.device('cpu'))
+test = torch.load("./fr/cbow100-fat/model4.pth")
 
 idx_to_word = test["idx_to_word"]
 word_to_idx = test["word_to_idx"]
 
-model = CBOWModeler(len(idx_to_word), EMBEDDING_DIM)
+model = CBOWModeler(len(idx_to_word), 100)
 model.load_state_dict(test["cbow_state_dict"])
 
 embeds = model.embeddings.weight.data.cpu()
@@ -28,7 +28,7 @@ embeds = model.embeddings.weight.data.cpu()
 def vec( word):
     return embeds[word_to_idx[word]]
 
-inp = vec("king") - vec("men") + vec("women")                                
+inp = vec("jeune") - vec("vieux") + vec("léger")                                
 print('inp.shape: ', inp.shape)
 
 emb_ranking_top, euclidean_dis_top = nearest_neighbour(inp, embeds, 13)

@@ -206,6 +206,42 @@ Pour récupérer le vocabulaire, `word2idx` et `idx2word` nous utilisons un modu
 
 Ce module permet aussi de chargé un dataset, dont notre dataset `Wikitext103`, Ce qui est particulierement pratique car il n'est donc pas nécessaire de télécharger en amont notre dataset, et notre programme est exécutable sur la plupart des machines disposant d'une connexion internet, sans se préoccuper de la présence ou de l'emplacement du dataset.
 
+La fonction `build_vocab_from_iterator` de `torchtext` permet d'obtenir depuis un texte un objet `vocab`. `Torchtext` optimise cette opération est permet de récupérer tout ce dont nous avons besoin (`word2idx`, `idx2word`) à partir des attributs de cette objet `vocab`.
+
+
+## Modèle CBOW
+
+Nous avons contruit notre modèle à partir de la classe de base `Module`^[voir [nn.Module](https://pytorch.org/docs/stable/generated/torch.nn.Module.html) pour la documentation officielle] proposée par `pytorch`. Nous pouvons visualiser l'ensemble de notre classe : 
+
+```python
+
+class CBOWModeler(nn.Module):
+  
+  def __init__(self, vocab_size, embedding_dim): 
+    super(CBOWModeler, self).__init__()
+    self.embeddings = nn.Embedding(vocab_size, embedding_dim)
+    self.linear1 = nn.Linear(embedding_dim, vocab_size)
+
+    initrange = 0.5 / embedding_dim
+    self.embeddings.weight.data.uniform_(-initrange, initrange)
+
+  def forward(self, input):
+    '''
+    calcul de la somme des contextes à laquelle 
+    on applique la transformation linéaire (tensor : [1, len(vocab)])
+
+    returns: log_softmax appliqué à la transformation 
+
+    '''
+    embedding = self.embeddings(input)
+    embedding = torch.sum(embedding, dim=1)
+
+    Z_1 = self.linear1(embedding)
+    out = F.log_softmax(Z_1, dim=1)
+
+    return out
+
+```
 
 # Resultats
 
@@ -272,5 +308,24 @@ Nous allons à présent vérifier que notre modèle performe des résultats simi
 Les résultats sont bons, sachant que la random baseline de cet exercice serait de $5 \times \frac{1}{|V|}$, si nous considerons 5 examples par tautologie. Nous pouvons essayer de comparer les performance de notre modèle selon le nombre d'itérations et aussi par rapport à FastText, qui fournit des embeddings entrainés sur la même architecture Word2Vec que la notre.
 
 ![accuracy en fonction du nombre d'epoch sur une liste de tautologie](./img/accuracy_plot.png){width=70%}
+
+# Limitation et piste d'amélioration
+
+Comme vu précedemment, notre implémentation de word2vec atteint déjà de bonnes performances. Il existe toutefois de nombreuses pistes à explorer pour améliorer la qualité de nos embeddings. 
+
+Nous pourrions explorer plusieurs types de pré-traitement de notre corpus avant de lancer la vectorisation. Nous avons par exemple décidé de passer notre corpus en minuscule, pour réduire le bruit lié aux tokens en début de phrase, mais cela se fait au détriment d'une perte d'information sur les noms propres nottament: "Bordeaux" devient "bordeaux" et les sens se melangent. Toutefois nous avons pensé que cette opération nous coute moins qu'elle nous rapporte. D'autres techniques de nettoyage du corpus comme la lemmatisation, la suppression des caractères spéciaux ou des nombres pourraient être prises en compte. Le cout de pré-traitement est particulièrement long maintenant que nous somme capables de faire marcher notre modèle sur de grandes quantités de données.
+
+Nous avons fait de nombreux tests sur les hyperparamètres afin de trouver ceux qui puissent allier bonne qualité d'embeddings et coût de l'entrainement (en termes de temps et de ressources).
+Nous avons nottament fait varier plusieurs hyperparamètres comme la taille de fenêtre, la dimensionnalité des vecteurs, le nombre d'itérations et le taux d'apprentissage. Toutefois nous n'avons pas gardé de trace de manière systématique des performance de notre modèle selon ces différents paramêtres. Il faudrait à l'avenir procéder de façon plus stricte, en passant par exemple par une grid search pour trouver la combinaison de paramêtres optimale, ou bien random search qui permettrait de trouver une combinaison suffisamment bonne en moins de temps.
+
+Aussi, un axe d'amélioration serait d'augmenter la quantité de données, et de les diversifier. Notre modèle est déjà entrainé sur XXXXXXX exemples, toutefois nous savons que plus les données sont conséquentes et variées et plus notre modèle pourra représenter fidèlement les mots de son vocabulaire. De manière générale, l'augmentation de la taille du corpus est souvent la première solution avancée. Toutefois, cela a un cout que nous ne jugions plus nécessaires vu l'état d'avancement du projet. Aussi, les données ajoutées au corpus d'entrainement doivent être de qualité: la diversité dans les exemples est primordiale car sinon les embeddings ne captureront pas totallement le sens des mots qu'ils encodent. Par exemple l'embedding de "robe" ne pourra pas encoder le sens de "couleur" d'un vin si il n'existe pas dans notre corpus d'entrainement de données parlant de vin. Cette problématique est présente dans le domaine de la désambiguisation lexicale, que plusieurs de nos camarades ont expérimenté cette année en projet de TAL.
+
+Une autre problématique est la gestion des déséquilibres lexicaux. Les mots fréquents ont mécaniquement une meilleure qualité de représentation puisqu'ils sont présents dans une quantité plus grande et plus de contextes diversifiés. A l'inverse, les mots rares auront une qualité de représentation amoindrie. Afin de contrer cela, nous pourrions ne considérer qu'une quantité bornée d'examples par mot de vocabulaire, afin de permettre une couverture plus grande du corpus d'entrainement et ainsi augmenter le nombre d'exemples rencontrés pour les mots rares. Nous pourrions aussi implémenter le négative sampling, qui permet d'augmenter la quantité d'exemples par mot en associant un mot avec des mots aléatoires du vocabulaire et en soustrayant leurs sens (EXEMPLE)
+
+Une des lacunes de notre implémentation vient aussi de la métrique d'évaluation. Elle se repose principalement sur la résolution de tautologies. Cette méthode est choisie car elle permet de juger de la qualité de plusieurs embeddings en même temps, tout en montrant qu'une addition/soustraction de vecteurs est similaire à une addition/soustraction de sens. 
+Toutefois, cette métrique est biaisée, nottament car le corpus de ces tautologies comporte de nombreux cas de mots rares. Nous ne considérons pas les tautologies où l'embedding d'un mot n'est pas encodé par notre modèle, mais il subsite de nombreux exemples de mots mal encodés qui ne valident pas les tautologies. C'est notamment le cas du sous corpus des tautologies sur les monnaies par exemple, ou les mots sont assez fréquents pour être encodés mais pas assez pour avoir une représentation fidèle de leurs sens. Une autre proposition de métrique pourrait être de se baser sur un modèle dont on sait que les embeddings sont de bonne qualité. En effet, nous pourrions proposer une métrique qui calculerait l'embedding le plus proche (distance ou similarité) d'un mot x dans notre modèle et de déterminer si il est aussi présent dans les n embeddings les plus proches d'un modèle tiers. Nous pourrions par exemple nous baser sur les embeddings fournis par fastext, dont l'utilisation est simple et rapide. 
+
+
+Enfin, nous pourrions initialiser nos vecteurs non pas de manière aléatoire mais en récupérant directement ceux fournis par un modèle tiers. Nous pourrions ensuite fine-tuner les embeddings sur notre corpus d'entrainement. Cette technique nous permettrait de spécialiser nos vecteurs sur un corpus spécifique, ce qui pourrait être utile si nous avons besoin de vecteurs spécialisé sur un domaine en particulier. L'exemple du milieu viticole donné au dessus est une bonne représentation d'un cas ou le fine-tuning donnerait de bon résultats. Pouvoir spécialiser des embeddings génériques tels que "robe", "mère", "cru", "sec", "moelleux".
 
 # References

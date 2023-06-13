@@ -3,6 +3,7 @@ title: "Modèle 'word2vec' pour la construction de vecteurs de mots"
 subtitle: 'Projet final de master 1 linguistique-informatique Université de Paris-cité'
 pdf-engine: lualatex
 latex-auto-install: true
+linkcolor: blue
 author: 
   - name: Eléonora Khachaturova
   - name: Armand Garrigou
@@ -166,6 +167,45 @@ $$
 $$
 
 # Méthodologie et implémentation
+
+Nous implémentons notre modele avec les caractéristiques suivantes :
+
+- utilisations de batch
+
+- pas de negative sampling 
+
+En choisissant une implémentation en batch, on assure une optimisation de computation. Si l'on regarde la définition du *softmax* on peut se rendre compte que ce calcul est en faite computationnellement lourd, il parcourt l'ensemble du vocabulaire **pour tout mot**. Ce calcul est donc particulierement lourd. En utilisant les batchs, on se permet de passer quelques exemples à chaques itérations, réduisant la lourdeur de ce calcul. De fait, l'utilisation d'une telle technique va nous permettre d'entrainer notre modèle bien plus rapidement, et sur de plus gros corpus de texte. 
+
+Le negative sampling est une technique introduite par Mikolov et son équipe. Bien qu'il s'agisse la aussi d'une technique d'optimisation computationnelle, nous ne l'implémenterons pas dans ce projet.
+
+Notre implémtations repose sur l'utilisation du module [`pytorch`](https://pytorch.org). Ce module propose un ensemble de classe et de fonction permettant d'optimiser nos taches et nos modèles bien plus facilemment. Nous verrons dans les parties suivantes comment nous avons utilisé ce module.
+
+## Données d'entrainement
+
+Nous disposons de trois corpus d'entrainement. Deux sont de langue anglaise et directement issue de texte Wikipédia. Nous avons utilisés deux datasets `Wikitext2` et `Wikitext103`^[Les datasets sont par exemple disponibles sur [Hugging Face](https://huggingface.co/datasets/wikitext)] qui est une collection de plus de 100 millions de tokens.
+
+Pour le corpus en langue française, nous disposons d'une partie du corpus *frcow*. Il s'agit d'extraction de texte issue du web. La particularité de ce corpus et qu'il a été pré-traité avec un travail de lemmatisation^[Nous remercions le professeur Olivier Bonami pour nous avoir transmis une partie de ce corpus comprenant son travail de lemmatisation]. 
+
+L'intéret d'avoir sous la main deux corpus de bonnes tailles est de pouvoir comparer l'apprentissage de notre modèle sur deux langues différentes et de deux types différents, un corpus plain text (`Wikitext103`) et un corpus lemmatiser (`frcow`) pour les besoins d'une étude morphologique.
+
+Comme toutes taches de NLP, nous devons dans un premier temps préparer nos données à être passer dans le modèle, c'est que nous allons décrire dans la partie suivante.
+
+## Prétraitement des données
+
+A partir des données nous avons besoins d'extraire : 
+
+- le vocabulaire : un `set` des mots présents dans notre corpus
+
+- un map des mots par leurs indices dans le corpus : un `dictionnaire word2idx` 
+
+- une liste des mots trié par leurs indices : cette liste `idx2word` permet à partir d'un indice de récupérer le mot correspondant 
+
+- pour chaque mot parcouru sur notre corpus, on doit récupérer son contexte : un `tuple` `([context], target)`
+
+Pour récupérer le vocabulaire, `word2idx` et `idx2word` nous utilisons un module particulier de `pytorch` : [`torchtext`](https://pytorch.org/text/stable/index.html). Nous pourrions récuperer ces informations avec des fonctions écrite "à la main", ce que nous avons fait lors des premiers tests de notre projet, cependant, si l'utilisation et la documentation de torchtext est parfois peu explicite et intuitive, ce module permet d'optimiser grandement notre phase de prétraitement. 
+
+Ce module permet aussi de chargé un dataset, dont notre dataset `Wikitext103`, Ce qui est particulierement pratique car il n'est donc pas nécessaire de télécharger en amont notre dataset, et notre programme est exécutable sur la plupart des machines disposant d'une connexion internet, sans se préoccuper de la présence ou de l'emplacement du dataset.
+
 
 # Resultats
 

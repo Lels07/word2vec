@@ -3,7 +3,7 @@
 #+toc: true
 #+OPTIONS: ^:{}
 
-* Classe Prepro
+* Classe Preprocess
 
 La classe ~Preprocess~ s'occupe du prétraitement des données en anglais.
 - *input* :
@@ -61,7 +61,7 @@ fonction à utiliser avec le ~dataloader~ de pytorch. Indique la façon dont son
   - batch input (contexte)
   - batch output (target)
 
-** get_dataloader_vocab(self, dataset_name, dataset_type, batch_size,min_freq_vocab, tokenizer_name, shuffle=True)
+** get_dataloader_vocab(self, dataset_name, dataset_type, batch_size, min_freq_vocab, tokenizer_name, shuffle=True)
 
 fonction qui renvoie le dataloader de pytorch comprenant les données prêt à être parcourues avec notre modèle.
 
@@ -70,13 +70,13 @@ fonction qui renvoie le dataloader de pytorch comprenant les données prêt à �
 *Attributs*:
 
 - ~nn.Embedding(vocab_size, embedding_dim)~
-  Instancie les embeddings d'une manière aléatoire, de la taille ~embedding_dim~. [[https://pytorch.org/docs/stable/generated/torch.nn.Embedding.html][torch.nn.Embedding]]
+  Instancie les embeddings d'une manière aléatoire, de la taille ~embedding_dim~. Lire plus: [[https://pytorch.org/docs/stable/generated/torch.nn.Embedding.html][torch.nn.Embedding]]
 
 - ~nn.Linear(embedding_dim, vocab_size)~
-  La fonction linéaire à appliquer lors de la transformation linéaire. [[https://pytorch.org/docs/stable/generated/torch.nn.Linear.html][torch.nn.linear]]
+  La fonction linéaire à appliquer lors de la transformation linéaire. Lire plus: [[https://pytorch.org/docs/stable/generated/torch.nn.Linear.html][torch.nn.linear]]
 
 - ~self.embeddings.weight.data.uniform_(-initrange, initrange)~
-  L'echelle des poids. Par défaut: $\frac{0.5}{N}$ ou $N$ est la dimension des embeddings
+  L'echelle des poids. Par défaut: $\frac{0.5}{N}$ ou $N$ est la dimension des embeddings.
 
 *Méthodes*:
 
@@ -97,7 +97,7 @@ Selon les hyperparamètres, effectue l'entrainement de manière suivante:
 - récupère les données prétraitées par FPreprocess ou [[Classe Prepro][Preprocess]] en fonction du format initial
 
 - crée une instances de classe CBOWModeler
-  paramètres: taille du vocabulaire, dimension des embeddings, (device)
+  paramètres: taille du vocabulaire, dimension des embeddings, type de mémoire à utiliser pour les calculs (CPU / GPU)
 
 - crée une instance d'~optimizer~ (par défaut - [[https://pytorch.org/docs/stable/generated/torch.optim.Adam.html][Adam]])
   *paramètres* :

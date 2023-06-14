@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2023-06-14 Wed 11:48 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Documentation Word2vec</title>
+<meta name="author" content="Léo Rongieras" />
+<meta name="generator" content="Org Mode" />
+<link rel="stylesheet" type="text/css" href="https://fniessen.github.io/org-html-themes/src/readtheorg_theme/css/htmlize.css"/>
+<link rel="stylesheet" type="text/css" href="https://fniessen.github.io/org-html-themes/src/readtheorg_theme/css/readtheorg.css"/>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="https://fniessen.github.io/org-html-themes/src/lib/js/jquery.stickytableheaders.min.js"></script>
+<script type="text/javascript" src="https://fniessen.github.io/org-html-themes/src/readtheorg_theme/js/readtheorg.js"></script>
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        displayAlign: "center",
+        displayIndent: "0em",
+
+        "HTML-CSS": { scale: 100,
+                        linebreaks: { automatic: "false" },
+                        webFont: "TeX"
+                       },
+        SVG: {scale: 100,
+              linebreaks: { automatic: "false" },
+              font: "TeX"},
+        NativeMML: {scale: 100},
+        TeX: { equationNumbers: {autoNumber: "AMS"},
+               MultLineWidth: "85%",
+               TagSide: "right",
+               TagIndent: ".8em"
+             }
+});
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+<body>
+<div id="content" class="content">
+<h1 class="title">Documentation Word2vec</h1>
+<div id="table-of-contents" role="doc-toc">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents" role="doc-toc">
+<ul>
+<li><a href="#orgc774c03">1. Classe Prepro</a>
+<ul>
+<li><a href="#org164d1df">1.1. get_tokenizer(self, tokenizer_name)</a></li>
+<li><a href="#org30d8104">1.2. get_data(self, data_name, data_type)</a></li>
+<li><a href="#orgee060ee">1.3. vocab_builder(self, data, tokenizer, min_freq_vocab)</a></li>
+<li><a href="#org92d2f4a">1.4. get_batch(self, batch, text_pipeline)</a></li>
+<li><a href="#org4dea04a">1.5. get_dataloader_vocab(self, dataset_name, dataset_type, batch_size,min_freq_vocab, tokenizer_name, shuffle=True)</a></li>
+</ul>
+</li>
+<li><a href="#org47edd0c">2. Classe CBOWModeler</a></li>
+<li><a href="#org01428ac">3. Trainer</a></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-orgc774c03" class="outline-2">
+<h2 id="orgc774c03"><span class="section-number-2">1.</span> Classe Prepro</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+La classe <code>Preprocess</code> s&rsquo;occupe du prétraitement des données en anglais.
+</p>
+<ul class="org-ul">
+<li><b>input</b> :
+<ul class="org-ul">
+<li>dataset_name <code>str</code></li>
+<li>dataset_type: <code>tuple[str]|str</code></li>
+<li>window_size: <code>int</code></li>
+<li>min_freq_vocab: <code>int</code></li>
+<li>batch_size <code>int</code></li>
+<li>tokenizer_name= <code>"basic_english"</code></li>
+</ul></li>
+
+<li><b>attribut</b> :
+<ul class="org-ul">
+<li>Objet <code>vocab</code></li>
+<li><code>train_data</code></li>
+</ul></li>
+
+<li><b>Méthodes</b>:
+
+<ul class="org-ul">
+<li><a href="#org164d1df">get_tokenizer(self, tokenizer_name)</a></li>
+
+<li><a href="#org30d8104">get_data(self, data_name, data_type)</a></li>
+
+<li><a href="#orgee060ee">vocab_builder(self, data, tokenizer, min_freq_vocab)</a></li>
+
+<li><a href="#org92d2f4a">get_batch(self, batch, text_pipeline)</a></li>
+
+<li><a href="#org4dea04a">get_dataloader_vocab(self, dataset_name, dataset_type, batch_size,min_freq_vocab, tokenizer_name, shuffle=True)</a></li>
+</ul></li>
+</ul>
+</div>
+
+
+
+<div id="outline-container-org164d1df" class="outline-3">
+<h3 id="org164d1df"><span class="section-number-3">1.1.</span> get_tokenizer(self, tokenizer_name)</h3>
+<div class="outline-text-3" id="text-1-1">
+<p>
+Récupère le tokenizer et le retourne. Par défault : <code>"basic_english"</code>
+</p>
+</div>
+</div>
+
+<div id="outline-container-org30d8104" class="outline-3">
+<h3 id="org30d8104"><span class="section-number-3">1.2.</span> get_data(self, data_name, data_type)</h3>
+<div class="outline-text-3" id="text-1-2">
+<p>
+Récupère les données de torchtext language modelling dataset.
+</p>
+<ul class="org-ul">
+<li><b>input</b> : nom du dataset, <code>WikiText2</code> ou <code>WikiText103</code>
+<ul class="org-ul">
+<li><code>data_type</code> : <code>train</code> ou <code>test</code></li>
+</ul></li>
+
+<li><b>returns</b>: <code>dataset itérator</code></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-orgee060ee" class="outline-3">
+<h3 id="orgee060ee"><span class="section-number-3">1.3.</span> vocab_builder(self, data, tokenizer, min_freq_vocab)</h3>
+<div class="outline-text-3" id="text-1-3">
+<p>
+Construit vocab à partir de data.
+</p>
+<ul class="org-ul">
+<li><b>inputs</b>:
+<ul class="org-ul">
+<li>data</li>
+<li>tokenizer</li>
+<li>min_freq_vocab : minimum d&rsquo;occurence pour qu&rsquo;un mot soit inclu dans le vocabulaire</li>
+</ul></li>
+
+<li><b>returns</b>: objet <code>vocab</code></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org92d2f4a" class="outline-3">
+<h3 id="org92d2f4a"><span class="section-number-3">1.4.</span> get_batch(self, batch, text_pipeline)</h3>
+<div class="outline-text-3" id="text-1-4">
+<p>
+fonction à utiliser avec le <code>dataloader</code> de pytorch. Indique la façon dont sont récupérés les batchs.
+</p>
+
+<ul class="org-ul">
+<li><b>returns</b> :
+<ul class="org-ul">
+<li>batch input (contexte)</li>
+<li>batch output (target)</li>
+</ul></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org4dea04a" class="outline-3">
+<h3 id="org4dea04a"><span class="section-number-3">1.5.</span> get_dataloader_vocab(self, dataset_name, dataset_type, batch_size,min_freq_vocab, tokenizer_name, shuffle=True)</h3>
+<div class="outline-text-3" id="text-1-5">
+<p>
+fonction qui renvoie le dataloader de pytorch comprenant les données prêt à être parcourues avec notre modèle.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org47edd0c" class="outline-2">
+<h2 id="org47edd0c"><span class="section-number-2">2.</span> Classe CBOWModeler</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+<b>Attributs</b>:
+</p>
+
+<ul class="org-ul">
+<li><code>nn.Embedding(vocab_size, embedding_dim)</code>
+Instancie les embeddings d&rsquo;une manière aléatoire, de la taille <code>embedding_dim</code>. <a href="https://pytorch.org/docs/stable/generated/torch.nn.Embedding.html">torch.nn.Embedding</a></li>
+
+<li><code>nn.Linear(embedding_dim, vocab_size)</code>
+La fonction linéaire à appliquer lors de la transformation linéaire. <a href="https://pytorch.org/docs/stable/generated/torch.nn.Linear.html">torch.nn.linear</a></li>
+
+<li><code>self.embeddings.weight.data.uniform_(-initrange, initrange)</code>
+L&rsquo;echelle des poids. Par défaut: \(\frac{0.5}{N}\) ou \(N\) est la dimension des embeddings</li>
+</ul>
+
+<p>
+<b>Méthodes</b>:
+</p>
+
+<ul class="org-ul">
+<li><p>
+<code>forward(self, input)</code>
+Implication de la propagation avant en effectuant le calcul
+de la somme des contextes à laquelle on applique la transformation linéaire <code>(tensor : [1, len(vocab)])</code>
+</p>
+
+<p>
+<b>input</b> : exemple (ou un batch d&rsquo;exemples) de forme <code>list[int]</code> où <code>int</code> correspond à l&rsquo;indice du mot en contexte.
+</p>
+
+<p>
+<b>returns</b> : <code>log_softmax</code> appliqué à la transformation.
+</p></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org01428ac" class="outline-2">
+<h2 id="org01428ac"><span class="section-number-2">3.</span> Trainer</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+Le fichier responsable de la phase d&rsquo;entrainement.
+</p>
+
+<p>
+Selon les hyperparamètres, effectue l&rsquo;entrainement de manière suivante:
+</p>
+
+<ul class="org-ul">
+<li>récupère les données prétraitées par FPreprocess ou <a href="#orgc774c03">Preprocess</a> en fonction du format initial</li>
+
+<li>crée une instances de classe CBOWModeler
+paramètres: taille du vocabulaire, dimension des embeddings, (device)</li>
+
+<li>crée une instance d&rsquo;<code>optimizer</code> (par défaut - <a href="https://pytorch.org/docs/stable/generated/torch.optim.Adam.html">Adam</a>)
+<b>paramètres</b> :
+<ul class="org-ul">
+<li>paramètres du modèle <a href="#org47edd0c">CBOW</a></li>
+<li><code>learning_rate</code></li>
+</ul></li>
+
+<li>pour le nombre d&rsquo;epoques indiqué
+<ul class="org-ul">
+<li>fait appel à la méthode train de la classe CBOWModeler (dérive de <code>nn.Module</code>)</li>
+<li>calcule la loss pour une paire contexte / mot-cible</li>
+<li>loss.backward et grad step</li>
+<li>mets à jour les poids selon la loss calculée</li>
+</ul></li>
+
+<li>calcule la loss total sur tous les exemples</li>
+</ul>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="author">Author: Léo Rongieras</p>
+<p class="date">Created: 2023-06-14 Wed 11:48</p>
+</div>
+</body>
+</html>

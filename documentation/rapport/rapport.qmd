@@ -427,7 +427,7 @@ class CBOWModeler(nn.Module):
   def __init__(self, vocab_size, embedding_dim): 
     super(CBOWModeler, self).__init__()
     self.embeddings = nn.Embedding(vocab_size, embedding_dim) # <1>
-    self.linear1 = nn.Linear(embedding_dim, vocab_size) #<2>
+    self.linear1 = nn.Linear(embedding_dim, vocab_size) # <2>
 
     initrange = 0.5 / embedding_dim
     self.embeddings.weight.data.uniform_(-initrange, initrange)
@@ -471,9 +471,11 @@ Tout de passe dans le fichier `trainer.py`.
 
 Notre objectif dans cet exercice est d'obtenir des embeddings de bonne qualité, c'est à dire représentatifs du sens des mots qu'ils représentent. Pour déterminer si nos embeddings encodent des informations sémantiques, nous avons plusieurs moyen de procéder.
 
-Nous allons nous baser sur la comparaisons de nos vecteurs entre eux, sur des taches particulières. Nous pouvons dans un premier temps nous contenter de visualiser la distribution de nos embeddings dans l'espace vectoriel. Nos embeddings étant de taille 200 nous devons d'abord passer par un algorithme de réduction de dimensions afin de ne garder que les 2 dimensions les plus importantes de notre espace vectoriel. Nous obtenons donc des embeddings de dimension 2 et nous pouvons les visualiser.
+Nous allons nous baser sur la comparaisons de nos vecteurs entre eux, sur des taches particulières. Nous pouvons dans un premier temps nous contenter de visualiser la distribution de nos embeddings dans l'espace vectoriel. Nos embeddings étant de taille 200 nous devons d'abord passer par un algorithme de réduction de dimensions afin de ne garder que les 2 dimensions les plus importantes de notre espace vectoriel. Nous obtenons donc des embeddings de dimension 2 et nous pouvons les visualiser. Nous donnons une représentation en deux dimensions pour le corpus anglais, donné en @fig-tsneEn et français donné en @fig-tsneFr. 
 
-![visualisation des embeddings en 2 dimension](./img/tsne2model6.png){width=80%}
+![visualisation des embeddings en 2 dimensions *WikiText103*](./img/tsne2model6.png){#fig-tsneEn}
+
+![visualisation des embeddings en 2 dimensions *frcow*](./img/tsneFr.png){#fig-tsneFr}
 
 
 Afin de confirmer ces résultats, nous pouvons mettre de coté la réduction de dimension, qui implique forcement une perte d'information. Nous cherchons à utiliser une métrique fiable et constante pour calculer la proximité entre vecteurs. Traditionellement on utilise la distance euclidienne ou la similarité cosinus. 
@@ -606,13 +608,14 @@ Markdown(tabulate(table, headers=["word", "cosine-sim"]))
 
 On peut voir que le mot "queen" apparait en troisième position des mots les plus similaire au vecteur résultant du calcul algébrique.
 
-Nous allons à présent vérifier que notre modèle performe des résultats similaires sur une liste de tautologies créée par le groupe de travail de Mikolov. Nous considerons qu'une tautologie est validée si le vecteur attendu en sortie est dans les 5 embeddings les plus proches du vecteur résultant de la soustraction et de l'addition.
-
+Nous allons à présent vérifier que notre modèle performe des résultats similaires sur une liste de tautologies créée par le groupe de travail de Mikolov. Nous considerons qu'une tautologie est validée si le vecteur attendu en sortie est dans les 5 embeddings les plus proches du vecteur résultant de la soustraction et de l'addition. L'ensemble des resultats sont résumer par les graphes @fig-accEpochen et @fig-subaccEpochen
 
 
 Les résultats sont bons, sachant que la random baseline de cet exercice serait de $5 \times \frac{1}{|V|}$, si nous considerons 5 examples par tautologie. Nous pouvons essayer de comparer les performance de notre modèle selon le nombre d'itérations et aussi par rapport à FastText, qui fournit des embeddings entrainés sur la même architecture Word2Vec que la notre.
 
-![accuracy en fonction du nombre d'epoch sur une liste de tautologie](./img/accuracy_plot.png){width=70%}
+![accuracy en fonction du nombre d'epoch sur une liste de tautologie](./img/accuracy_plot.png){#fig-accEpochen}
+
+![accuracy en fonction des epochs pour les sous catégories de tautologie](./img/accuracy_subtype_en.png){#fig-subaccEpochen}
 
 # Limitation et piste d'amélioration
 

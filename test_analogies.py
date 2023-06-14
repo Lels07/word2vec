@@ -105,10 +105,10 @@ def draw_plot_from_explicit_accuracies():
 
     for acc, name in zip([antonym_adjectives, gram6_nationality_adjective, currency, gram1_adjective_to_adverb, gram2_opposite, capital_common_countries, family, city_in_state], ["antonym_adjectives", "gram6_nationality_adjective", "currency", "gram1_adjective_to_adverb", "gram2_opposite", "capital_common_countries", "family", "city_in_state"]):
         plt.plot([i for i in range(5)], acc, label=name)
-    plt.legend(title="Types of analogies", loc="center", bbox_to_anchor=(1.2, 0.5))
-    plt.title("Accuracy in validating French analogy according to epoch\n(per type of analogy)")
-    plt.xlabel("epoch")
-    plt.ylabel("accuracy")
+    plt.legend(title="Type d'analogie", loc="center", bbox_to_anchor=(1.2, 0.5))
+    plt.title("Score sur les analogies françaises selon chaque itération\n(par type d'analogie)")
+    plt.xlabel("itérations")
+    plt.ylabel("score")
     plt.ylim(0, 1)
     plt.show()
 
@@ -144,9 +144,10 @@ def draw_plot_from_explicit_accuracies():
     for acc, name in zip    ([gram3_comparative, gram6_nationality_adjective, family, gram9_plural_verbs, gram8_plural, gram7_past_tense, gram5_present_participle, gram4_superlative, capital_common_countries, capital_world, city_in_state, gram1_adjective_to_adverb, gram2_opposite, currency],["gram3_comparative", "gram6_nationality_adjective", "family", "gram9_plural_verbs", "gram8_plural", "gram7_past_tense", "gram5_present_participle", "gram4_superlative", "capital_common_countries", "capital_world", "city_in_state", "gram1_adjective_to_adverb", "gram2_opposite", "currency"]):
         plt.plot([i for i in range(7)], acc, label=name)
     plt.legend(title="Types of analogies", loc="center", bbox_to_anchor=(1.2, 0.5))
-    plt.title("Accuracy in validating English analogy according to epoch\n(per type of analogy)")
-    plt.xlabel("epoch")
-    plt.ylabel("accuracy")
+    plt.legend(title="Type d'analogie", loc="center", bbox_to_anchor=(1.2, 0.5))
+    plt.title("Score sur les analogies anglaises selon chaque itération\n(par type d'analogie)")
+    plt.xlabel("itérations")
+    plt.ylabel("score")
     plt.ylim(0, 1)
     plt.show()
 def get_analogies_examples(path:str) -> dict[str:list[str]]:

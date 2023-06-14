@@ -208,19 +208,226 @@ Ce module permet aussi de chargé un dataset, dont notre dataset `Wikitext103`, 
 
 La fonction `build_vocab_from_iterator` de `torchtext` permet d'obtenir depuis un texte un objet `vocab`. `Torchtext` optimise cette opération est permet de récupérer tout ce dont nous avons besoin (`word2idx`, `idx2word`) à partir des attributs de cette objet `vocab`.
 
+Tout notre prétraitement ce fait dans le fichier `Prepro.py`. On doit retenir que on organisant les taches de cette manière, on se retrouve en fin de phase de prétraitrement avec un objet `preprocess` dont les attributs sont : 
+
+- un objet `Vocab` disposant d'un ensemble d'attribut dont :
+  
+  - un mapping `word2idx`
+
+  - un mapping inverse `idx2word`
+
+```{python}
+#| echo: false
+import os
+import torch
+
+#############################
+# Config all parameters here 
+#############################
+
+DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+RAW_DATA = 'WikiText2' # toy_corpus ou wikitext2 ou frcow 
+DATA_PATH = "./corpus/frcow-lemmatized-100000sent.xml" # only for french corpus
+MODEL_ID = RAW_DATA
+DISPLAY_LOSS = True 
+
+
+
+#general parameters
+DISPLAY_N_BATCH = 2000
+SAVE_N_EPOCH = 1
+BATCH_SIZE = 64
+N_SAVE = 1
+EPOCH = 20
+DATA_TYPE = 'train' #train or test or valid
+
+#preprocess parameters
+WINDOW_SIZE = 5
+MIN_FREQ = 30
+
+# Model parameters
+EMBEDDING_DIM = 250
+LEARNING_RATE = 0.025
+
+#eval settings
+if RAW_DATA == "WikiText103" or "wikitext2":
+    TEST_WORDS = ["pain", "paris", "king", "day", "fight"]
+if RAW_DATA == "frcow":
+    TEST_WORDS = ["paris", "berlin", "guerre", "il", "triste"]
+
+    
+
+##### Main trainer and utils settings
+
+PREPROCESS_DATA_DIR = os.path.join(MODEL_ID, 'preprocessed')
+MODEL_DIR = os.path.join(MODEL_ID, "cbow" + str(EMBEDDING_DIM))
+
+from functools import partial
+import torch
+import re
+from torch.utils.data import DataLoader
+from torchtext.data import to_map_style_dataset
+from torchtext.vocab import vocab
+from torchtext.vocab import build_vocab_from_iterator
+from torchtext.datasets import WikiText103, WikiText2
+from torchtext.data.utils import get_tokenizer
+
+class Preprocess:
+
+    def __init__(self, dataset_name: str,
+                 dataset_type: tuple[str]|str,
+                 window_size: int,
+                 min_freq_vocab: int,
+                 batch_size, 
+                 tokenizer_name="basic_english"):
+
+        self.window_size = window_size
+
+        train_data, vocab = self.get_dataloader_vocab(dataset_name, dataset_type, batch_size, min_freq_vocab, tokenizer_name)
+
+        self.train_data = train_data
+        self.vocab = vocab
+
+    def get_tokenizer(self, tokenizer_name):
+
+        tokenizer = get_tokenizer(tokenizer_name)
+
+        return tokenizer
+
+    def get_data(self, data_name: str, data_type: tuple[str]|str):
+        '''
+        get data from torchtext language modelling dataset  
+        '''
+
+        if data_name == "WikiText2":
+            data = WikiText2(split=data_type)
+
+        elif data_name == "WikiText103":
+            data = WikiText103(split=data_type)
+
+        data = to_map_style_dataset(data)
+
+        return data
+
+    def vocab_builder(self, data, tokenizer, min_freq_vocab):
+        """build vocab from data"""
+
+        vocab = build_vocab_from_iterator(map(tokenizer, data), specials=["<unk>"], min_freq=min_freq_vocab)
+        vocab.set_default_index(vocab["<unk>"])
+        
+        return vocab
+
+    def get_batch(self, batch, text_pipeline):
+
+        '''batch to be use with pytorch dataloader'''
+
+        
+        batch_input, batch_output = [], []
+        for text in batch:
+            text_tokens_ids = text_pipeline(text)
+            
+            if len(text_tokens_ids) < self.window_size * 2 + 1:
+                continue
+
+            for idx in range(len(text_tokens_ids) - self.window_size * 2):
+                token_id_sequence = text_tokens_ids[idx : (idx + self.window_size * 2 + 1)]
+                output = token_id_sequence.pop(self.window_size)
+                input_ = token_id_sequence
+                batch_input.append(input_)
+                batch_output.append(output)
+
+        batch_input = torch.tensor(batch_input, dtype=torch.long)
+        batch_output = torch.tensor(batch_output, dtype=torch.long)
+        return batch_input, batch_output
+    
+    def get_dataloader_vocab(self, dataset_name, dataset_type, batch_size, min_freq_vocab, tokenizer_name, shuffle=True):
+
+        data = self.get_data(dataset_name, dataset_type)
+        tokenizer = self.get_tokenizer(tokenizer_name)
+
+        vocab = self.vocab_builder(data, tokenizer, min_freq_vocab) 
+
+        
+        text_pipeline = lambda x: vocab(tokenizer(x))
+
+        collate_function = self.get_batch
+
+        train_data = DataLoader(data, batch_size=batch_size, 
+                                shuffle=shuffle, 
+                                collate_fn=partial(collate_function, text_pipeline=text_pipeline))
+        return train_data, vocab
+
+
+```
+On peut obtenir ce dont on a besoin ainsi : 
+
+```{python}
+#| label: lst-preproVocab
+#| lst-cap: "récupération de word2idx et idx2word comme attribut"
+
+X = Preprocess(RAW_DATA, DATA_TYPE, WINDOW_SIZE, MIN_FREQ, BATCH_SIZE) # <1>
+vocab = X.vocab
+word2idx = vocab.get_stoi()
+idx2word = vocab.get_itos()
+
+```
+
+1. Les constantes passer en argument sont toutes dans un fichier `config.py` qui est importé.
+
+
+```{python}
+
+print(word2idx["king"])
+
+```
+ 
+ - Un autre attribut de notre attribut de notre objet `preprocess` est simplement nos `train_data`
+
+```{python}
+train_data = X.train_data
+```
+et voici un exemple pour le premier batch, c'est à dire le premiere ensemble d'exemple que l'on peut trouver dans nos `train_data`:
+```{python}
+#| echo: false
+i = 0  
+for idx, (context, target) in enumerate(train_data):
+  print(f"batch numéro {idx}")
+  input = context
+  gold_output = target
+  print(f"Un exemple d'input: {input}")
+  print(f"\nLe gold_label associé: {gold_output}")
+  i += 1 
+  if i == 1:
+    break
+
+```
+
+On comprend ici l'importante de l'utilisation de batch^[Cette étape est particulierement importante. En réalité toute notre tentative d'optimisation repose sur cette idée de calcul matricielle, il a donc été très important pour nous de vérifié comme on le fait ici que l'on utilise bel et bien un systeme matriciel.]. On a donc, pour nos données d'input, plusieurs contextes, en l'occurrence l'indice des mots en contextes, pour un seul élément dans nos `train_data`. Ce qu'on passe en `input`^[Attention : ce ne sont pas encore des matrices d'embeddings, il s'agit des indices des mots en contexte, ce sont les données telles qu'elles sont prêtes à être envoyées dans le modèle.] de notre modele est donc une *matrice* qui comprends un ensemble de contexte. Le *gold_label* est donc par la même logique  devenu un vecteur dont les éléments sont les gold_label associés à chaques contextes de notre matrice.(Dans notre optimisation : le vecteur input est devenu une matrice de plusieurs vecteurs, le mot représentant le gold_label est devenu un vecteur de plusieurs gold_label)
+
+On a donc notre phase de pré-traitement terminée. Nous allons décrire brievement l'implémentation du modèle CBOW.
+
 
 ## Modèle CBOW
 
 Nous avons contruit notre modèle à partir de la classe de base `Module`^[voir [nn.Module](https://pytorch.org/docs/stable/generated/torch.nn.Module.html) pour la documentation officielle] proposée par `pytorch`. Nous pouvons visualiser l'ensemble de notre classe : 
 
-```python
+```{python}
+#| echo: false
+
+import torch
+import torch.nn as nn 
+import torch.nn.functional as F 
+
+```
+
+```{python}
 
 class CBOWModeler(nn.Module):
   
   def __init__(self, vocab_size, embedding_dim): 
     super(CBOWModeler, self).__init__()
-    self.embeddings = nn.Embedding(vocab_size, embedding_dim)
-    self.linear1 = nn.Linear(embedding_dim, vocab_size)
+    self.embeddings = nn.Embedding(vocab_size, embedding_dim) # <1>
+    self.linear1 = nn.Linear(embedding_dim, vocab_size) #<2>
 
     initrange = 0.5 / embedding_dim
     self.embeddings.weight.data.uniform_(-initrange, initrange)
@@ -234,14 +441,29 @@ class CBOWModeler(nn.Module):
 
     '''
     embedding = self.embeddings(input)
-    embedding = torch.sum(embedding, dim=1)
+    embedding = torch.sum(embedding, dim=1) # <3>
 
-    Z_1 = self.linear1(embedding)
-    out = F.log_softmax(Z_1, dim=1)
+    Z_1 = self.linear1(embedding) # <4>
+    out = F.log_softmax(Z_1, dim=1) # <5>
 
     return out
 
 ```
+1. On retrouve ici notre matrices $\mathcal{A^{(c)}} \in \mathbb{R}^{|V| \times n}$ ou $n$ est la dimmension des embeddings
+2. Ici notre matrice $\mathcal{A^{(w)}} \in \mathbb{R}^{n \times V}$
+3. la sommes des contextes
+4. notre vecteur score $z$ est obtenu par $z = \mathcal{A^{(w)}} \sum_{i=1}^{N\times 2}a_i = \mathcal{A^{(w)}}\widehat{x}$
+5. On retourne ce score transformé en log probabilité soit $\widehat{y} =$ log_softmax$(z)$ 
+
+
+Les classes et méthodes essentielles au programme sont décrites dans la documentation. Cette documentation en `.html` sera jointe au dossier final.
+Comme on peut le voir, notre classe suit plus ou moins explicitement ce qui a été décrit dans notre premìere partie. La propagation consiste donc en la somme des contextes ainsi que l'application linaire. Cette dernière retourne un `log_softmax`, un vecteurs comprenant les log_probabilités pour chaques classes, dans notre cas, pour chaque mot du vocabulaire.
+
+Voyons donc en dernier lieu comment nous avons conçu la phase d'entrainement.
+
+## Phase d'entrainement
+
+Tout de passe dans le fichier `trainer.py`. 
 
 # Resultats
 
@@ -266,7 +488,90 @@ $$ cos(A, B) = \frac{(A • B)}{(||A|| \times ||B||)} $$
 
 Ces deux métriques sont pertinentes pour notre tache, elles présentent toutes deux des avantages et des inconvénients. La distance euclidienne permet de calculer les vecteurs les plus proches (littéralement) d'un embedding en particulier. Toutefois, cette distance n'est pas entièremment bornée: elle peut être égale à 0 si deux vecteurs se superposent, mais n'a pas de limite naturelle supérieure. Se problème est résolu par la similarité cosinus qui est naturellement bornée entre -1 et 1. Le seul problème de cette métrique est que deux vecteurs peuvent avoir une similarité cosinus de 1 et pourtant ne pas avoir une distance euclidienne égale à 0. Traditionellement on préfère utiliser la similarité cosinus.
 
-FIGURE COMPARAISON DISTANCE/SIMILARITE
+```{python}
+#| echo: false
+
+import torch.nn as nn
+import numpy as np 
+from numpy.linalg import norm
+
+def nearest_neighbour(X, embeddings, k):
+    distance = nn.CosineSimilarity()
+    dist = distance(X, embeddings)
+    all_idx = np.argsort(-dist)[:k]
+    all_cos = dist[all_idx]
+
+    return all_idx, all_cos
+
+def k_n_nn(model, words, word_to_idx, idx_to_word, k):
+    model.eval()
+    matrix = model.embeddings.weight.data.cpu()
+
+    print(f"process to determine the {k} nearest words of {words}")
+
+    for word in words:
+        input = matrix[word_to_idx[word]]
+
+        ranking, _ = nearest_neighbour(input, matrix, k=k+1)
+
+        print(word.ljust(10), ' | ', ', '.join([idx_to_word[i] for i in ranking[1:]]))
+    
+    return {}
+
+import torch, os, pickle, shutil
+import torch.nn as nn 
+import torch.nn.functional as F 
+import torch.optim as optim
+import numpy as np 
+
+
+test = torch.load("../../en/cbow200/model6.pth", map_location=torch.device('cpu'))
+
+idx_to_word = test["idx_to_word"]
+word_to_idx = test["word_to_idx"]
+
+model = CBOWModeler(len(idx_to_word), 200)
+model.load_state_dict(test["cbow_state_dict"])
+cos_distance = nn.CosineSimilarity(dim=0)
+def eucli_distance(a, b):
+  return norm(a - b)
+
+
+embeds = model.embeddings.weight.data.cpu()
+
+def vec( word):
+    return embeds[word_to_idx[word]]
+
+# inp = vec("jeune") - vec("vieux") + vec("léger")                                
+# print('inp.shape: ', inp.shape)
+inp1 = vec("france")
+imp2 = vec("paris")
+
+ham = vec("ham")
+
+
+```
+
+Par exemple : 
+```{python}
+#| echo: false
+#| label: tbl-franceParis
+#| tbl-cap: comparaison de similarité entre Paris/France et Paris/ham
+
+from IPython.display import Markdown
+from tabulate import tabulate
+
+cos_france_paris = np.dot(inp1, imp2)/(norm(inp1)*norm(imp2))
+euc_france_paris = eucli_distance(inp1, imp2)
+
+cos_france_ham = np.dot(inp1, ham)/(norm(inp1)*norm(ham))
+euc_france_ham = eucli_distance(inp1, ham)
+
+table = [["france/paris", cos_france_paris, euc_france_paris], ["france/ham", cos_france_ham, euc_france_ham]]
+Markdown(tabulate(table, headers=["cosine", "euclidien"]))
+```
+
+On peut remarquer que selon nos mesure "France" est plus proche de "Paris" que de "ham". Plus proche littéralement comme l'indique la mesure de distance euclidienne mais aussi plus similaire selon notre mesure de cosinus, qui est plus proche de 1. 
 
 La tache sur laquelle nous allons pouvoir vraiment évaluer la qualité de nos embeddings sont les tautologies. Elles sont utilisées dans l'article original qui introduit le modèle Word2Vec (Mikolov & al., 2013). Nos vecteurs sont représentables dans un espace euclidien et en respectent les règles: 
 

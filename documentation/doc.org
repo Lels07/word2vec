@@ -1,0 +1,113 @@
+#+SETUPFILE: https://fniessen.github.io/org-html-themes/org/theme-readtheorg.setup
+#+title: Documentation Word2vec
+#+toc: true
+#+OPTIONS: ^:{}
+
+* Classe Preprocess
+
+La classe ~Preprocess~ s'occupe du prétraitement des données en anglais.
+- *input* :
+  - dataset_name ~str~
+  - dataset_type: ~tuple[str]|str~
+  - window_size: ~int~
+  - min_freq_vocab: ~int~
+  - batch_size ~int~
+  - tokenizer_name= ~"basic_english"~
+
+- *attribut* :
+  - Objet ~vocab~
+  - ~train_data~
+
+- *Méthodes*:
+
+  - [[get_tokenizer(self, tokenizer_name)][get_tokenizer(self, tokenizer_name)]]
+
+  - [[get_data(self, data_name, data_type)][get_data(self, data_name, data_type)]]
+
+  - [[vocab_builder(self, data, tokenizer, min_freq_vocab)][vocab_builder(self, data, tokenizer, min_freq_vocab)]]
+
+  - [[get_batch(self, batch, text_pipeline)][get_batch(self, batch, text_pipeline)]]
+
+  - [[get_dataloader_vocab(self, dataset_name, dataset_type, batch_size,min_freq_vocab, tokenizer_name, shuffle=True)][get_dataloader_vocab(self, dataset_name, dataset_type, batch_size,min_freq_vocab, tokenizer_name, shuffle=True)]]
+
+
+
+** get_tokenizer(self, tokenizer_name)
+
+Récupère le tokenizer et le retourne. Par défault : ~"basic_english"~
+
+** get_data(self, data_name, data_type)
+
+ Récupère les données de torchtext language modelling dataset.
+  - *input* : nom du dataset, ~WikiText2~ ou ~WikiText103~
+    - ~data_type~ : ~train~ ou ~test~
+
+  - *returns*: ~dataset itérator~
+
+** vocab_builder(self, data, tokenizer, min_freq_vocab)
+  Construit vocab à partir de data.
+  - *inputs*:
+    - data
+    - tokenizer
+    - min_freq_vocab : minimum d'occurence pour qu'un mot soit inclu dans le vocabulaire
+
+  - *returns*: objet ~vocab~
+
+** get_batch(self, batch, text_pipeline)
+
+fonction à utiliser avec le ~dataloader~ de pytorch. Indique la façon dont sont récupérés les batchs.
+
+- *returns* :
+  - batch input (contexte)
+  - batch output (target)
+
+** get_dataloader_vocab(self, dataset_name, dataset_type, batch_size, min_freq_vocab, tokenizer_name, shuffle=True)
+
+fonction qui renvoie le dataloader de pytorch comprenant les données prêt à être parcourues avec notre modèle.
+
+* Classe CBOWModeler
+
+*Attributs*:
+
+- ~nn.Embedding(vocab_size, embedding_dim)~
+  Instancie les embeddings d'une manière aléatoire, de la taille ~embedding_dim~. Lire plus: [[https://pytorch.org/docs/stable/generated/torch.nn.Embedding.html][torch.nn.Embedding]]
+
+- ~nn.Linear(embedding_dim, vocab_size)~
+  La fonction linéaire à appliquer lors de la transformation linéaire. Lire plus: [[https://pytorch.org/docs/stable/generated/torch.nn.Linear.html][torch.nn.linear]]
+
+- ~self.embeddings.weight.data.uniform_(-initrange, initrange)~
+  L'echelle des poids. Par défaut: $\frac{0.5}{N}$ ou $N$ est la dimension des embeddings.
+
+*Méthodes*:
+
+- ~forward(self, input)~
+  Implication de la propagation avant en effectuant le calcul
+  de la somme des contextes à laquelle on applique la transformation linéaire ~(tensor : [1, len(vocab)])~
+
+  *input* : exemple (ou un batch d'exemples) de forme ~list[int]~ où ~int~ correspond à l'indice du mot en contexte.
+
+  *returns* : ~log_softmax~ appliqué à la transformation.
+
+* Trainer
+
+Le fichier responsable de la phase d'entrainement.
+
+Selon les hyperparamètres, effectue l'entrainement de manière suivante:
+
+- récupère les données prétraitées par FPreprocess ou [[Classe Prepro][Preprocess]] en fonction du format initial
+
+- crée une instances de classe CBOWModeler
+  paramètres: taille du vocabulaire, dimension des embeddings, type de mémoire à utiliser pour les calculs (CPU / GPU)
+
+- crée une instance d'~optimizer~ (par défaut - [[https://pytorch.org/docs/stable/generated/torch.optim.Adam.html][Adam]])
+  *paramètres* :
+  - paramètres du modèle [[Classe CBOWModeler][CBOW]]
+  - ~learning_rate~
+
+- pour le nombre d'epoques indiqué
+  - fait appel à la méthode train de la classe CBOWModeler (dérive de ~nn.Module~)
+  - calcule la loss pour une paire contexte / mot-cible
+  - loss.backward et grad step
+  - mets à jour les poids selon la loss calculée
+
+- calcule la loss total sur tous les exemples

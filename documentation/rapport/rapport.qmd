@@ -549,7 +549,7 @@ import torch.optim as optim
 import numpy as np 
 
 
-test = torch.load("../../en/cbow200/model6.pth", map_location=torch.device('cpu'))
+test = torch.load("../../embeds/en/cbow200/model6.pth", map_location=torch.device('cpu'))
 
 idx_to_word = test["idx_to_word"]
 word_to_idx = test["word_to_idx"]
@@ -707,6 +707,14 @@ Wikitext103 et WikiText2 sont téléchargé par le programme, mais `frcow` doit 
 
 
   Le reste des variables n'est pas à modifier. 
+
+::: {.callout-note}
+Pour installer les modules necessaires dans l'environnement, dans le dossier de code : 
+```bash
+pip install -r requirements.txt
+
+```
+:::
 
 Pour lancer l'entrainement il suffit de se placer dans le dossier courant, depuis un terminal : 
 

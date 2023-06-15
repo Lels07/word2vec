@@ -59,8 +59,6 @@ Dans notre projet, nous avons souhaité développer notre propre implémentation
 
 Nous avons défini les objectifs suivants pour notre projet : (1) implémenter l'algorithme Word2Vec en utilisant le modèle CBOW, (2) entraîner notre modèle sur un corpus de texte de grande envergure, et (3) évaluer la qualité des embeddings appris, en utilisant différentes mesures de similarité sémantique et en effectuant des tâches d'analogie de mots.
 
-L'intégralité de notre code est retrouvable sur notre [github](https://github.com/Lels07/word2vec)
-
 # Approche théorique
 
 Le modèle Word2Vec propose deux architectures principales : Skip-gram et CBOW (Continuous Bag-of-Words). Dans notre implémentation, nous avons choisi de nous concentrer sur l'architecture CBOW. Contrairement au modèle Skip-gram qui prédit les mots environnants à partir d'un mot central, CBOW utilise le contexte environnant pour prédire le mot central. Cette approche nous permet d'apprendre des embeddings de mots en exploitant les relations contextuelles.
@@ -204,15 +202,15 @@ A partir des données nous avons besoins d'extraire :
 
 - pour chaque mot parcouru sur notre corpus, on doit récupérer son contexte : un `tuple` `([context], target)`
 
-Pour récupérer le vocabulaire, `word2idx` et `idx2word` nous utilisons un module particulier de `pytorch` : [`torchtext`](https://pytorch.org/text/stable/index.html). Nous pourrions récuperer ces informations avec des fonctions écrites "à la main", ce que nous avons fait lors des premiers tests de notre projet, cependant, si l'utilisation et la documentation de torchtext est parfois peu explicite et intuitive, ce module permet d'optimiser grandement la phase de prétraitement. 
+Pour récupérer le vocabulaire, `word2idx` et `idx2word` nous utilisons un module particulier de `pytorch` : [`torchtext`](https://pytorch.org/text/stable/index.html). Nous pourrions récuperer ces informations avec des fonctions écrites "à la main", ce que nous avons fait lors des premiers tests de notre projet, cependant, si l'utilisation et la documentation de torchtext est parfois peu explicite et intuitive, ce module permet d'optimiser grandement notre phase de prétraitement. 
 
-Ce module permet aussi de charger un dataset, dont notre dataset `Wikitext103`, ce qui est particulierement pratique car il n'est donc pas nécessaire de télécharger en amont notre dataset. Notre programme est exécutable sur la plupart des machines disposant d'une connexion internet, sans se préoccuper de la présence ou de l'emplacement du dataset.
+Ce module permet aussi de chargé un dataset, dont notre dataset `Wikitext103`, Ce qui est particulierement pratique car il n'est donc pas nécessaire de télécharger en amont notre dataset, et notre programme est exécutable sur la plupart des machines disposant d'une connexion internet, sans se préoccuper de la présence ou de l'emplacement du dataset.
 
 La fonction `build_vocab_from_iterator` de `torchtext` permet d'obtenir depuis un texte un objet `vocab`. `Torchtext` optimise cette opération est permet de récupérer tout ce dont nous avons besoin (`word2idx`, `idx2word`) à partir des attributs de cette objet `vocab`.
 
-Tout le prétraitement se fait dans le fichier `Prepro.py`. On doit retenir qu'en organisant les taches de cette manière, on se retrouve en fin de phase de prétraitrement avec un objet `preprocess` dont les attributs sont : 
+Tout notre prétraitement ce fait dans le fichier `Prepro.py`. On doit retenir que on organisant les taches de cette manière, on se retrouve en fin de phase de prétraitrement avec un objet `preprocess` dont les attributs sont : 
 
-- un objet `Vocab` disposant d'un ensemble d'attributs dont :
+- un objet `Vocab` disposant d'un ensemble d'attribut dont :
   
   - un mapping `word2idx`
 
@@ -374,7 +372,7 @@ idx2word = vocab.get_itos()
 
 ```
 
-1. Les constantes passées en argument sont toutes dans un fichier `config.py`^[la description et l'usage de ce fichier est donné dans @sec-usage] qui est importé.
+1. Les constantes passer en argument sont toutes dans un fichier `config.py` qui est importé.
 
 
 ```{python}
@@ -383,12 +381,12 @@ print(word2idx["king"])
 
 ```
  
- - Un autre attribut de notre objet `preprocess` est simplement le `train_data`
+ - Un autre attribut de notre attribut de notre objet `preprocess` est simplement nos `train_data`
 
 ```{python}
 train_data = X.train_data
 ```
-et voici un exemple pour le premier batch, c'est à dire le premiere ensemble d'exemples que l'on peut trouver dans nos `train_data`:
+et voici un exemple pour le premier batch, c'est à dire le premiere ensemble d'exemple que l'on peut trouver dans nos `train_data`:
 ```{python}
 #| echo: false
 i = 0  
@@ -404,7 +402,7 @@ for idx, (context, target) in enumerate(train_data):
 
 ```
 
-On comprend ici l'importance de l'utilisation de batch^[Cette étape est particulièrement importante. En réalité toute notre tentative d'optimisation repose sur cette idée de calcul matriciel, il a donc été très important pour nous de vérifier comme on le fait ici que l'on utilise bel et bien un systeme matriciel.]. On a donc, pour nos données d'input, plusieurs contextes, en l'occurrence l'indice des mots en contexte. Ce qu'on passe en `input`^[Attention : ce ne sont pas encore des matrices d'embeddings, il s'agit des indices des mots en contexte, ce sont les données telles qu'elles sont prêtes à être envoyées dans le modèle.] de notre modele est donc une *matrice* qui comprends un ensemble de contexte. Le *gold_label* est donc par la même logique  devenu un vecteur dont les éléments sont les gold_label associés à chaques contextes de notre matrice.(Dans notre optimisation : le vecteur input est devenu une matrice de plusieurs vecteurs, le mot représentant le gold_label est devenu un vecteur de plusieurs gold_label)
+On comprend ici l'importante de l'utilisation de batch^[Cette étape est particulierement importante. En réalité toute notre tentative d'optimisation repose sur cette idée de calcul matricielle, il a donc été très important pour nous de vérifié comme on le fait ici que l'on utilise bel et bien un systeme matriciel.]. On a donc, pour nos données d'input, plusieurs contextes, en l'occurrence l'indice des mots en contextes, pour un seul élément dans nos `train_data`. Ce qu'on passe en `input`^[Attention : ce ne sont pas encore des matrices d'embeddings, il s'agit des indices des mots en contexte, ce sont les données telles qu'elles sont prêtes à être envoyées dans le modèle.] de notre modele est donc une *matrice* qui comprends un ensemble de contexte. Le *gold_label* est donc par la même logique  devenu un vecteur dont les éléments sont les gold_label associés à chaques contextes de notre matrice.(Dans notre optimisation : le vecteur input est devenu une matrice de plusieurs vecteurs, le mot représentant le gold_label est devenu un vecteur de plusieurs gold_label)
 
 On a donc notre phase de pré-traitement terminée. Nous allons décrire brievement l'implémentation du modèle CBOW.
 
@@ -451,43 +449,43 @@ class CBOWModeler(nn.Module):
     return out
 
 ```
-1. On retrouve ici notre matrices $\mathcal{A^{(c)}} \in \mathbb{R}^{|V| \times n}$ ou $n$ est la dimension des embeddings
+1. On retrouve ici notre matrices $\mathcal{A^{(c)}} \in \mathbb{R}^{|V| \times n}$ ou $n$ est la dimmension des embeddings
 2. Ici notre matrice $\mathcal{A^{(w)}} \in \mathbb{R}^{n \times V}$
-3. La sommes des contextes
-4. Le vecteur score $z$ est obtenu par $z = \mathcal{A^{(w)}} \sum_{i=1}^{N\times 2}a_i = \mathcal{A^{(w)}}\widehat{x}$
+3. la sommes des contextes
+4. notre vecteur score $z$ est obtenu par $z = \mathcal{A^{(w)}} \sum_{i=1}^{N\times 2}a_i = \mathcal{A^{(w)}}\widehat{x}$
 5. On retourne ce score transformé en log probabilité soit $\widehat{y} =$ log_softmax$(z)$ 
 
 
 Les classes et méthodes essentielles au programme sont décrites dans la documentation. Cette documentation en `.html` sera jointe au dossier final.
-Comme on peut le voir, notre classe suit plus ou moins explicitement ce qui a été décrit dans la premìere partie. La propagation consiste donc en la somme des contextes ainsi que l'application linéaire. Cette dernière retourne un `log_softmax`, un vecteur comprenant les log_probabilités pour chaque classe, dans notre cas, pour chaque mot du vocabulaire.
+Comme on peut le voir, notre classe suit plus ou moins explicitement ce qui a été décrit dans notre premìere partie. La propagation consiste donc en la somme des contextes ainsi que l'application linaire. Cette dernière retourne un `log_softmax`, un vecteurs comprenant les log_probabilités pour chaques classes, dans notre cas, pour chaque mot du vocabulaire.
 
 Voyons donc en dernier lieu comment nous avons conçu la phase d'entrainement.
 
 ## Phase d'entrainement
 
-Tout se passe dans le fichier `trainer.py`. 
+Tout de passe dans le fichier `trainer.py`. 
 
-Notre modèle, les hyperparametres^[voir @sec-usage dans laquelle on décrit comment configurer les hyperparametres], les données d'entrainement sont importées dans ce fichier python. L'ensemble est instancié. Nous utilons comme `optimizer` l'algorithme [`Adam`](https://pytorch.org/docs/stable/generated/torch.optim.Adam.html)
+Notre modèle, les hyperparametres^[voir @sec-usage dans laquelle on décrit comment configurer les hyperparametres], les données d'entrainement sont importé dans ce fichier python. L'ensemble est instancié. Nous utilons comme `optimizer` l'algorithme [`Adam`](https://pytorch.org/docs/stable/generated/torch.optim.Adam.html)
 
 ```python
 grad = optim.Adam(cbow.parameters(), lr=LEARNING_RATE)
 
 ```
 
-Il est possible d'indiquer au programme que l'on souhaite sauvegarder le modèle toutes les époques, ou selon un certain nombre de batch parcouru. Cela nous a été particulierement pratique pour effectuer des tests de manière systématique et de "jongler" avec différents hyperparametres.
+Il est possible d'indiquer au programme que l'on souhaite sauvegarder le modèle toutes les epochs, ou selon un certain nombre de batch parcourus. Cela nous a été particulierement pratique pour effectuer des tests de manière systématique et de "jongler" avec différents hyperparametres.
 
-A partir de cela nous avons effectué quelques experiences à partir de l'entrainement de notre modèle. L'ensemble de ces experiences est présenté dans la partie suivante.
+A partir de cela nous avons effecter quelques experiences à partir de l'entrainement de notre modèle. L'ensemble de ces experiences sont présentées dans la partie suivante.
 
 # Resultats
 
 ## Calculer la qualité des embeddings
 
-Notre objectif dans cet exercice est d'obtenir des embeddings de bonne qualité, c'est à dire représentatifs du sens des mots qu'ils encodent. Pour déterminer si nos embeddings encodent des informations sémantiques, nous avons plusieurs moyens de procéder.
+Notre objectif dans cet exercice est d'obtenir des embeddings de bonne qualité, c'est à dire représentatifs du sens des mots qu'ils représentent. Pour déterminer si nos embeddings encodent des informations sémantiques, nous avons plusieurs moyen de procéder.
 
-Nous allons nous baser sur la comparaison de nos vecteurs entre eux, sur des taches particulières. Nous pouvons dans un premier temps nous contenter de visualiser la distribution de nos embeddings dans l'espace vectoriel. Nos embeddings étant de taille 200 nous devons d'abord passer par un algorithme de réduction de dimensions afin de ne garder que les 2 dimensions les plus importantes de notre espace vectoriel. Nous obtenons donc des embeddings de dimension 2 et nous pouvons les visualiser. Nous donnons une représentation en deux dimensions pour le corpus anglais, donné en @fig-tsneEn et français donné en @fig-tsneFr. 
+Nous allons nous baser sur la comparaisons de nos vecteurs entre eux, sur des taches particulières. Nous pouvons dans un premier temps nous contenter de visualiser la distribution de nos embeddings dans l'espace vectoriel. Nos embeddings étant de taille 200 nous devons d'abord passer par un algorithme de réduction de dimensions afin de ne garder que les 2 dimensions les plus importantes de notre espace vectoriel. Nous obtenons donc des embeddings de dimension 2 et nous pouvons les visualiser. Nous donnons une représentation en deux dimensions pour le corpus anglais, donné en @fig-tsneEn et français donné en @fig-tsneFr. 
 
 
-Un autre élément présent dans l'article publié par Mikolov et son équipe est la possibilté de rendre compte des relations sémantiques conjoites entre des paires de mots. Ainsi on peut remarquer sur la figure suivante que "Paris" est à "France" ce que "Berlin" est à "Germany" : 
+Un autre élément présent dans l'article présenter par Mikolov et son équipe est la possibilté de rendre de compte des relation conjoite entre des paires de mots. Ainsi on peut remarquer sur la figure suivante que "Paris" est à "France" ce que "Berlin" est à "Germany" : 
 
 ![Paris/France, Berlin/Germany](./img/france_germ.png){width=40%}
 
@@ -500,17 +498,17 @@ plus largement on peut donc retrouver ce genre de relation sémantique graphique
 ![visualisation des embeddings en 2 dimensions *frcow*](./img/tsneFr.png){#fig-tsneFr}
 
 
-Afin de confirmer ces résultats, nous pouvons mettre de coté la réduction de dimensions, qui implique forcément une perte d'information. Nous cherchons à utiliser une métrique fiable et constante pour calculer la proximité entre vecteurs. Traditionellement on utilise la distance euclidienne ou la similarité cosinus. 
+Afin de confirmer ces résultats, nous pouvons mettre de coté la réduction de dimension, qui implique forcement une perte d'information. Nous cherchons à utiliser une métrique fiable et constante pour calculer la proximité entre vecteurs. Traditionellement on utilise la distance euclidienne ou la similarité cosinus. 
 
 La distance euclidienne est une mesure de la distance entre deux points dans un espace vectoriel à plusieurs dimensions. La distance euclidienne entre deux points A et B est calculée en prenant la racine carrée de la somme des carrés des différences entre les coordonnées correspondantes des points. Mathématiquement, la formule de la distance euclidienne est la suivante :
 
 $$ ||AB|| = \sqrt{(A_1 - B_1)^2 + (A_1 - B_2)^2 + ... + (A_n - B_n)^2}$$
 
-Le calcul de similarité cosinus mesure l'angle entre deux vecteurs dans l'espace vectoriel. La similarité cosinus est une mesure de similarité normalisée qui varie entre -1 et 1. Une valeur de similarité cosinus proche de 1 indique une similarité élevée entre les vecteurs, tandis qu'une valeur proche de -1 indique des vecteurs opposés. Il est basé sur la formule mathématique suivante :
+Le calcul de similarité cosinus mesure l'angle entre deux vecteurs dans l'espace vectoriel. La similarité cosinus est une mesure de similarité normalisée qui varie entre -1 et 1. Une valeur de similarité cosinus proche de 1 indique une similarité élevée entre les vecteurs, tandis qu'une valeur proche de -1 indique une similarité inverse. Il est basé sur la formule mathématique suivante :
 
 $$ cos(A, B) = \frac{(A • B)}{(||A|| \times ||B||)} $$
 
-Ces deux métriques sont pertinentes pour notre tache, elles présentent toutes deux des avantages et des inconvénients. La distance euclidienne permet de calculer les vecteurs les plus proches (littéralement) d'un embedding en particulier. Toutefois, cette distance n'est pas entièrement bornée: elle peut être égale à 0 si deux vecteurs se superposent, mais n'a pas de limite naturelle supérieure. Se problème est résolu par la similarité cosinus qui est naturellement bornée entre -1 et 1. Le seul problème de cette métrique est que deux vecteurs peuvent avoir une similarité cosinus de 1 et pourtant ne pas avoir une distance euclidienne égale à 0. Traditionellement on préfère utiliser la similarité cosinus.
+Ces deux métriques sont pertinentes pour notre tache, elles présentent toutes deux des avantages et des inconvénients. La distance euclidienne permet de calculer les vecteurs les plus proches (littéralement) d'un embedding en particulier. Toutefois, cette distance n'est pas entièremment bornée: elle peut être égale à 0 si deux vecteurs se superposent, mais n'a pas de limite naturelle supérieure. Se problème est résolu par la similarité cosinus qui est naturellement bornée entre -1 et 1. Le seul problème de cette métrique est que deux vecteurs peuvent avoir une similarité cosinus de 1 et pourtant ne pas avoir une distance euclidienne égale à 0. Traditionellement on préfère utiliser la similarité cosinus.
 
 ```{python}
 #| echo: false
@@ -595,9 +593,9 @@ table = [["france/paris", cos_france_paris, euc_france_paris], ["france/ham", co
 Markdown(tabulate(table, headers=["cosine", "euclidien"]))
 ```
 
-On peut remarquer que selon nos mesures "France" est plus proche de "Paris" que de "ham". Plus proche littéralement comme l'indique la mesure de distance euclidienne mais aussi plus similaire selon notre mesure de cosinus, qui est plus proche de 1. On peut retrouver en @sec-annexe Annexe un tableau comparatif entre cosinus et distance euclidienne exercés sur une liste d'analogies
+On peut remarquer que selon nos mesure "France" est plus proche de "Paris" que de "ham". Plus proche littéralement comme l'indique la mesure de distance euclidienne mais aussi plus similaire selon notre mesure de cosinus, qui est plus proche de 1. On peut retrouver en @sec-annexe Annexe un tableau comparatif entre cosinus et distance euclidienne exercés sur une liste d'analogie
 
-La tache sur laquelle nous allons pouvoir vraiment évaluer la qualité de nos embeddings sont les analogies. Elles sont utilisées dans l'article original qui introduit le modèle Word2Vec. Nos vecteurs sont représentables dans un espace euclidien et en respectent les règles: 
+La tache sur laquelle nous allons pouvoir vraiment évaluer la qualité de nos embeddings sont les analogies. Elles sont utilisées dans l'article original qui introduit le modèle Word2Vec (Mikolov & al., 2013). Nos vecteurs sont représentables dans un espace euclidien et en respectent les règles: 
 
 - La distance entre deux points est toujours positive.
 
@@ -605,9 +603,9 @@ La tache sur laquelle nous allons pouvoir vraiment évaluer la qualité de nos e
 
 - La distance entre deux points est symétrique, c'est-à-dire que la distance entre A et B est la même que la distance entre B et A.
 
-- La distance entre deux points obéit à l'inégalité triangulaire. Cela signifie que la distance entre deux points A et C est toujours plus courte que la somme des distances entre A et B, et entre B et C.
+- La distance entre deux points obéit à l'inégalité triangulaire. Cela signifie que la distance entre deux points A et C ne peut jamais être plus courte que la somme des distances entre A et B, et entre B et C.
 
-Ainsi on peut appliquer correctement les opérations mathématiques simples comme l'addition et la soustraction entre vecteurs. Mikolov et son équipe montre que le modèle Word2Vec permet d'appliquer l'addition entre vecteurs pour combiner les sens de deux mots, et inversement avec la soustraction. Nous arrivons donc au fameux example de leur article: 
+Ainsi on peut appliquer correctement les opérations mathématiques simples comme l'addition et la soustraction entre vecteurs. (Mikolov et al, 2013) montre que le modèle Word2Vec permet d'appliquer l'addition entre vecteurs pour combiner les sens de deux mots, et inversement avec la soustraction. Nous arrivons donc au fameux example de leur article: 
     
   > *ROI - HOMME + FEMME = REINE*
 
@@ -628,7 +626,7 @@ Markdown(tabulate(table, headers=["word", "cosine-sim"]))
 
 ```
 
-On peut voir que le mot "queen" apparait en troisième position des mots les plus similaires au vecteur résultant du calcul algébrique. Ici aussi nous pouvons rendre compte de genre de relation graphiquement, par exemple : 
+On peut voir que le mot "queen" apparait en troisième position des mots les plus similaire au vecteur résultant du calcul algébrique. Ici aussi nous pouvons rendre de compte de genre de relation graphiquement par exemple : 
 
 ![relation d'analogie](./img/analogy_france_russie.png)
 
@@ -638,22 +636,22 @@ On peut voir que le mot "queen" apparait en troisième position des mots les plu
 
 ## Analogies
 
-Nous allons à présent vérifier que notre modèle performe des résultats similaires sur une liste d'analogies créée par le groupe de travail de Mikolov. Nous considerons qu'une analogie est validée si le vecteur attendu en sortie est dans les 5 embeddings les plus proches du vecteur résultant de la soustraction et de l'addition. L'ensemble des resultats est résumé par les graphes suivants.
+Nous allons à présent vérifier que notre modèle performe des résultats similaires sur une liste d'analogies créée par le groupe de travail de Mikolov. Nous considerons qu'une analogie est validée si le vecteur attendu en sortie est dans les 5 embeddings les plus proches du vecteur résultant de la soustraction et de l'addition. L'ensemble des resultats sont résumer par les graphes suivants.
 
 ![accuracy en fonction du nombre d'epoch sur une liste d'analogie](./img/accuracy_plot.png){width=50%}
 
 ![](./img/accuracy_subtype_en.png){#fig-subaccEpochen}
 
-Les résultats sont bons, sachant que la random baseline de cet exercice serait de $5 \times \frac{1}{|V|}$, si nous considerons 5 examples par analogie. Nous pouvons essayer de comparer les performances de notre modèle selon le nombre d'itérations et aussi par rapport à FastText, qui fournit des embeddings entrainés sur la même architecture Word2Vec que la nôtre.
+Les résultats sont bons, sachant que la random baseline de cet exercice serait de $5 \times \frac{1}{|V|}$, si nous considerons 5 examples par analogie. Nous pouvons essayer de comparer les performance de notre modèle selon le nombre d'itérations et aussi par rapport à FastText, qui fournit des embeddings entrainés sur la même architecture Word2Vec que la notre.
 
-![tableau comparatif d'accuracy entre notre modèle et FastText sur une liste d'analogies](./img/tableau_comparaison_fastext.png)
+![tableau comparatif d'accuracy entre notre modèle et FastText sur une liste d'analogie](./img/tableau_comparaison_fastext.png)
 
 
 # Limitation et piste d'amélioration
 
 Comme vu précedemment, notre implémentation de word2vec atteint déjà de bonnes performances. Il existe toutefois de nombreuses pistes à explorer pour améliorer la qualité de nos embeddings. 
 
-Nous pourrions explorer plusieurs types de pré-traitement de notre corpus avant de lancer la vectorisation. Nous avons par exemple décidé de passer notre corpus en minuscule, pour réduire le bruit lié aux tokens en début de phrase, mais cela se fait au détriment d'une perte d'information sur les noms propres, nottament: "Bordeaux" devient "bordeaux" et les sens se melangent. Toutefois nous avons pensé que cette opération nous coute moins qu'elle nous rapporte. D'autres techniques de nettoyage du corpus comme la lemmatisation, la suppression des caractères spéciaux ou des nombres pourraient être prises en compte. Le cout de pré-traitement est particulièrement long maintenant que nous sommes capables de faire marcher notre modèle sur de grandes quantités de données.
+Nous pourrions explorer plusieurs types de pré-traitement de notre corpus avant de lancer la vectorisation. Nous avons par exemple décidé de passer notre corpus en minuscule, pour réduire le bruit lié aux tokens en début de phrase, mais cela se fait au détriment d'une perte d'information sur les noms propres nottament: "Bordeaux" devient "bordeaux" et les sens se melangent. Toutefois nous avons pensé que cette opération nous coute moins qu'elle nous rapporte. D'autres techniques de nettoyage du corpus comme la lemmatisation, la suppression des caractères spéciaux ou des nombres pourraient être prises en compte. Le cout de pré-traitement est particulièrement long maintenant que nous somme capables de faire marcher notre modèle sur de grandes quantités de données.
 
 Nous avons fait de nombreux tests sur les hyperparamètres afin de trouver ceux qui puissent allier bonne qualité d'embeddings et coût de l'entrainement (en termes de temps et de ressources).
 Nous avons nottament fait varier plusieurs hyperparamètres comme la taille de fenêtre, la dimensionnalité des vecteurs, le nombre d'itérations et le taux d'apprentissage. Toutefois nous n'avons pas gardé de trace de manière systématique des performance de notre modèle selon ces différents paramêtres. Il faudrait à l'avenir procéder de façon plus stricte, en passant par exemple par une grid search pour trouver la combinaison de paramêtres optimale, ou bien random search qui permettrait de trouver une combinaison suffisamment bonne en moins de temps.
@@ -663,24 +661,24 @@ Aussi, un axe d'amélioration serait d'augmenter la quantité de données, et de
 Une autre problématique est la gestion des déséquilibres lexicaux. Les mots fréquents ont mécaniquement une meilleure qualité de représentation puisqu'ils sont présents dans une quantité plus grande et plus de contextes diversifiés. A l'inverse, les mots rares auront une qualité de représentation amoindrie. Afin de contrer cela, nous pourrions ne considérer qu'une quantité bornée d'examples par mot de vocabulaire, afin de permettre une couverture plus grande du corpus d'entrainement et ainsi augmenter le nombre d'exemples rencontrés pour les mots rares. Nous pourrions aussi implémenter le négative sampling, qui permet d'augmenter la quantité d'exemples par mot en associant un mot avec des mots aléatoires du vocabulaire et en soustrayant leurs sens.
 
 Une des lacunes de notre implémentation vient aussi de la métrique d'évaluation. Elle se repose principalement sur la résolution d'analogies. Cette méthode est choisie car elle permet de juger de la qualité de plusieurs embeddings en même temps, tout en montrant qu'une addition/soustraction de vecteurs est similaire à une addition/soustraction de sens. 
-Toutefois, cette métrique est biaisée, nottament car le corpus de ces analogies comporte de nombreux cas de mots rares. Nous ne considérons pas les analogies où l'embedding d'un mot n'est pas encodé par notre modèle, mais il subsite de nombreux exemples de mots mal encodés qui ne valident pas les analogies. C'est notamment le cas du sous corpus des analogies sur les monnaies par exemple, ou les mots sont assez fréquents pour être encodés mais pas assez pour avoir une représentation fidèle de leurs sens. Une autre proposition de métrique pourrait être de se baser sur un modèle dont on sait que les embeddings sont de bonne qualité. En effet, nous pourrions proposer une métrique qui calculerait l'embedding le plus proche (distance ou similarité) d'un mot x dans notre modèle et de déterminer si il est aussi présent dans les $n$ embeddings les plus proches d'un modèle tiers. Nous pourrions par exemple nous baser sur les embeddings fournis par fastext, dont l'utilisation est simple et rapide. 
+Toutefois, cette métrique est biaisée, nottament car le corpus de ces analogies comporte de nombreux cas de mots rares. Nous ne considérons pas les analogies où l'embedding d'un mot n'est pas encodé par notre modèle, mais il subsite de nombreux exemples de mots mal encodés qui ne valident pas les analogies. C'est notamment le cas du sous corpus des analogies sur les monnaies par exemple, ou les mots sont assez fréquents pour être encodés mais pas assez pour avoir une représentation fidèle de leurs sens. Une autre proposition de métrique pourrait être de se baser sur un modèle dont on sait que les embeddings sont de bonne qualité. En effet, nous pourrions proposer une métrique qui calculerait l'embedding le plus proche (distance ou similarité) d'un mot x dans notre modèle et de déterminer si il est aussi présent dans les n embeddings les plus proches d'un modèle tiers. Nous pourrions par exemple nous baser sur les embeddings fournis par fastext, dont l'utilisation est simple et rapide. 
 
 
-Enfin, nous pourrions initialiser nos vecteurs non pas de manière aléatoire mais en récupérant directement ceux fournis par un modèle tiers. Nous pourrions ensuite fine-tuner les embeddings sur notre corpus d'entrainement. Cette technique nous permettrait de spécialiser nos vecteurs sur un corpus spécifique, ce qui pourrait être utile si nous avons besoin de vecteurs spécialisé sur un domaine en particulier. 
+Enfin, nous pourrions initialiser nos vecteurs non pas de manière aléatoire mais en récupérant directement ceux fournis par un modèle tiers. Nous pourrions ensuite fine-tuner les embeddings sur notre corpus d'entrainement. Cette technique nous permettrait de spécialiser nos vecteurs sur un corpus spécifique, ce qui pourrait être utile si nous avons besoin de vecteurs spécialisé sur un domaine en particulier. L'exemple du milieu viticole donné au dessus est une bonne représentation d'un cas ou le fine-tuning donnerait de bon résultats. Pouvoir spécialiser des embeddings génériques tels que "robe", "mère", "cru", "sec", "moelleux".
 
 # Usage {#sec-usage}
 
 ::: {.callout-note}
 Nous avons décidé d'utiliser un fichier de configuration qui est importé dans chaque fichier plutot que d'utiliser un systeme en ligne de commande.
-Il y a beaucoup de variables que l'on peut configurer et nous avons trouvé cela plus facile d'utilisation et plus pratique.
+Il y a beaucoup de variable que l'on peut configurer et nous avons trouvé cela plus facile d'utilisation et plus pratique.
 :::
 
-L'ensemble des hyperparametres peut être modifié dans le fichier `config.py`. Liste des variables : 
+L'ensemble des hyperparametres peuvents modifiés dans le fichier `config.py`. Liste des variables : 
 
 - `RAW_DATA` : `WikiText2`, `WikiText103` ou `frcow`
 
 ::: {.callout-warning}
-Wikitext103 et WikiText2 sont téléchargé par le programme, mais `frcow` doit être récupéré manuellement. Si l'on souhaite utiliser ce corpus on doit indiquer le `path` dans la variable `DATA_PATH`
+Wikitext103 et WikiText2 sont téléchargé par le programme, mais `frcow` doit être récupérer manuellement. Si l'on souhaite utiliser ce corpus on doit indiquer le `path` dans la variable `DATA_PATH`
 :::
 
 - `DATA_PATH` : `path` vers le corpus `frcow`, neccessaire si `RAW_DATA = frcow`
@@ -706,9 +704,9 @@ Wikitext103 et WikiText2 sont téléchargé par le programme, mais `frcow` doit 
 - `SAVE_N_EPOCH` : `int` le modèle sera sauvegardé toutes les `n` epoch
 
 
-  Le reste des variables n'est pas à modifier. 
+  Le reste des variables ne sont pas à modifier. 
 
-Pour lancer l'entrainement il suffit de se placer dans le dossier courant, depuis un terminal : 
+Pour lançer l'entrainement il suffit de se placer dans le dossier courant, depuis un terminal : 
 
 ```bash
 python3 trainer.py

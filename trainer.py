@@ -43,8 +43,8 @@ cbow = CBOWModeler(len(vocab), EMBEDDING_DIM).to(DEVICE)
 
 grad = optim.Adam(cbow.parameters(), lr=LEARNING_RATE)
 
-lr_lambda = lambda epoch: (EPOCH - epoch) / EPOCH
-lr_scheduler = LambdaLR(grad, lr_lambda=lr_lambda, verbose=True)
+# lr_lambda = lambda epoch: (EPOCH - epoch) / EPOCH
+# lr_scheduler = LambdaLR(grad, lr_lambda=lr_lambda, verbose=True)
 
 for epoch in range(EPOCH):
     print('\n===== EPOCH {}/{} ====='.format(epoch + 1, EPOCH))   
@@ -79,6 +79,6 @@ for epoch in range(EPOCH):
                         'word_to_idx': word_to_idx,
                         'idx_to_word': idx_to_word,
                         },'{}/model{}.pth'.format(MODEL_DIR, epoch) )
-    lr_scheduler.step()
+    # lr_scheduler.step()
 
     print(mean(total_loss))

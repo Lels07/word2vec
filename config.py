@@ -26,8 +26,8 @@ WINDOW_SIZE = 5
 MIN_FREQ = 30
 
 # Model parameters
-EMBEDDING_DIM = 250
-LEARNING_RATE = 0.025
+EMBEDDING_DIM = 200
+LEARNING_RATE = 0.0005
 
 #eval settings
 if RAW_DATA == "WikiText103" or "wikitext2":

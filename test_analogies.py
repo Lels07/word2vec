@@ -9,30 +9,24 @@ from utils import nearest_neighbour
 from sklearn.manifold import TSNE
 
 def main():
-    draw_plot_from_explicit_accuracies()
 
-    accuracy_list = []
-    for i in range(7):
-        print(f"Turn = {i}")
+    path = "./en/cbow200/model6.pth"
+    checkpoint = torch.load(path, map_location=torch.device('cpu'))
 
-        path = "./en/cbow200/model" + str(i) + ".pth"
-        checkpoint = torch.load(path, map_location=torch.device('cpu'))
+    idx_to_word = checkpoint["idx_to_word"]
+    word_to_idx = checkpoint["word_to_idx"]
 
-        idx_to_word = checkpoint["idx_to_word"]
-        word_to_idx = checkpoint["word_to_idx"]
+    tsne2D = torch.load("./en/TSNE/2D_embeddings.pt")
+    tsne2D = torch.from_numpy(tsne2D)
+    model = CBOWModeler(len(idx_to_word), 200)
+    model.load_state_dict(checkpoint["cbow_state_dict"])
+    embeds = model.embeddings.weight.data.cpu()
 
-        model = CBOWModeler(len(idx_to_word), 200)
-        model.load_state_dict(checkpoint["cbow_state_dict"])
-        embeds = model.embeddings.weight.data.cpu()
+    plot_relations(idx_to_word, word_to_idx, tsne2D)
 
-        accuracy = test_embeddings_on_analogies(idx_to_word, word_to_idx, embeds)
-        accuracy_list.append(accuracy)
+    # accuracy = test_embeddings_on_analogies(idx_to_word, word_to_idx, embeds, ban_list=new_ban, path_analogies="questions-words.txt")
 
-    print(accuracy_list)
 
-    plt.plot([i for i in range(5)], accuracy_list)
-    plt.ylabel("accuracy")
-    plt.show()
 
 
 
@@ -56,7 +50,6 @@ def test_embeddings_on_analogies(idx_to_word:list[str], word_to_idx:dict[str:str
         for index, analogy in enumerate(analogies):
             if all(item in idx_to_word for item in analogy):
 
-                print(index, len(analogies))
                 counter_all_examples+=1
 
                 inp = vec(analogy[1]) - vec(analogy[0]) + vec(analogy[2])
@@ -68,6 +61,7 @@ def test_embeddings_on_analogies(idx_to_word:list[str], word_to_idx:dict[str:str
 
                 #if expected result
                 if analogy[3] in emb_ranking_top[:10]:
+                    print(analogy)
                     counter_correct_prediction+=1
 
     return counter_correct_prediction/counter_all_examples
@@ -180,20 +174,43 @@ def plot_fasttext():
     #
     # test_embeddings_on_analogies(loaded_vectors.index_to_key(), loaded_vectors.key_to_index(), fasttext_vectors)
 
-def plot_analogy(idx_to_word:list[str], word_to_idx:dict[str:str], embeds:torch.Tensor) -> None:
-    all_analogies_examples = get_analogies_examples("questions-words.txt")
 
-    model = TSNE(n_components = 3)
-    embeds = model.fit_transform(embeds)
+def plot_relations(idx_to_word:list[str], word_to_idx:dict[str:str], embeds:torch.Tensor) -> None:
+    relations = ['paris', 'france'], ['berlin', 'germany'],['brussels', 'belgium'],['kiev', 'ukraine'],['minsk', 'belarus'],['moscow', 'russia'],['paris', 'france'],['vienna', 'austria'], ["tirana", "albania"]
+    for relation in relations:
 
-    A, B, C = embeds[word_to_idx["man"]], embeds[word_to_idx["king"]], embeds[word_to_idx["woman"]]
-    tautology = B - A
+        A, B = embeds[word_to_idx[relation[0]]], embeds[word_to_idx[relation[1]]]
 
-    x, y, z = [elt[0] for elt in [A, B, C, tautology]], [elt[1] for elt in [A, B, C, tautology]], [elt[2] for elt in [A, B, C, tautology]]
-    fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
-    ax.scatter(x, y, z, c=['y', 'y', 'r', 'g'])
+
+        x, y = [elt[0] for elt in [A, B]], [elt[1] for elt in [A, B]]
+        plt.scatter(x, y, c=['g', 'g'])
+        plt.plot([x[0],x[1]], [y[0],y[1]])
+        for i, txt in enumerate(relation):
+            plt.annotate(txt, (x[i], y[i]))
+        plt.title(f'représentation en 2D des relations capitale<->pays')
+        plt.xlabel("X[0]")
+        plt.ylabel("X[1]")
     plt.show()
+
+def plot_analogy(idx_to_word:list[str], word_to_idx:dict[str:str], embeds:torch.Tensor) -> None:
+    # model = TSNE(n_components = 3)
+    # embeds = model.fit_transform(embeds)
+    analogies = [['paris', 'france', 'moscow', 'russia']]
+    for analogy in analogies:
+
+        A, B, C, D = embeds[word_to_idx[analogy[0]]], embeds[word_to_idx[analogy[1]]], embeds[word_to_idx[analogy[2]]], embeds[word_to_idx[analogy[3]]]
+        analogy_res = B - A + C
+
+
+        x, y = [elt[0] for elt in [A, B, C, D, analogy_res]], [elt[1] for elt in [A, B, C, D, analogy_res]]
+        plt.scatter(x, y, c=['g', 'g', 'g', 'g', 'g'])
+        plt.plot([x[0],x[1],x[4],x[2],x[0]], [y[0],y[1],y[4],y[2],y[0]])
+        for i, txt in enumerate(analogy+[f"{analogy[1]} - {analogy[0]} + {analogy[2]}"]):
+            plt.annotate(txt, (x[i], y[i]))
+        plt.title(f'représentation en 2D des vecteurs de l\'analogie:\n{analogy}')
+        plt.xlabel("X[0]")
+        plt.ylabel("X[1]")
+        plt.show()
 
 if __name__ == "__main__":
     main()

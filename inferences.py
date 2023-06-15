@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from sklearn.manifold import TSNE
 
-test = torch.load("./fr/cbow100-fat/model4.pth")
+test = torch.load("./fr/cbow100-fat/model4.pth", map_location=torch.device('cpu'))
 
 idx_to_word = test["idx_to_word"]
 word_to_idx = test["word_to_idx"]

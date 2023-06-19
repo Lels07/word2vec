@@ -31,7 +31,7 @@ def vec( word):
 inp = vec("jeune") - vec("vieux") + vec("léger")                                
 print('inp.shape: ', inp.shape)
 
-emb_ranking_top, euclidean_dis_top = nearest_neighbour(inp, embeds, 13)
+emb_ranking_top, euclidean_dis_top = nearest_neighbour(inp, embeds, 1)
 print('emb_ranking_top: ', emb_ranking_top, type(emb_ranking_top))
 
 for idx, t in enumerate(emb_ranking_top):

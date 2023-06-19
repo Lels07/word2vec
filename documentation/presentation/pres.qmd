@@ -1,0 +1,56 @@
+---
+title: "Modèle 'word2vec' pour la construction de vecteurs de mots" 
+author: 
+  - name: Eléonora Khachaturova
+  - name: Armand Garrigou
+  - name: Léo Rongieras
+format: revealjs
+---
+
+## Approche théorique de Word2vec
+
+Modèle $n$-gram : 
+$$P(w_1, w_2,...,w_n) = \prod_{i=2}^{n} P(w_i | w_{i-1})$$. 
+
+Modèle CBOW :
+
+```{mermaid}
+
+flowchart TB
+
+  id1[le chat dort les souris chantent] -- w --> id[dort]
+
+  id1[le chat dort les souris chantent] --w+1--> id4[les]
+  id1[le chat dort les souris chantent] --w+2--> id5[souris]
+
+  subgraph B[" "]
+  id4[les]
+  id5[souris]
+  end
+
+  subgraph Z[" "]
+  direction LR
+  id[dort]
+  end
+  id1[le chat dort les souris chantent] -- w-2 --> id2[le]
+  id1[le chat dort les souris chantent] -- w-1 --> id3[chat]
+  subgraph A[" "]
+  id2[le]
+  id3[chat]
+  end
+```
+- *bi-directionalité*
+
+---
+
+- $\mathcal{A^{(c)}} \in \mathbb{R}^{|V| \times n}$ la matrice des mots en entré où $a_i$ correspond à la $i$-ème ligne de $\mathcal{A^{(c)}}$ c'est à dire le vecteur qui représente le mot en entré $w_i$ 
+
+- $\mathcal{A^{(w)}} \in \mathbb{R}^{n \times |V|}$ la matrice en sortie où $y_i$ correspond à la $i$-ème colone de $\mathcal{A^{(w)}}$ c'est à dire le vecteur qui représente le mot en sortie $w_i$
+
+## Implémentation
+test
+
+
+## Resultats
+
+
